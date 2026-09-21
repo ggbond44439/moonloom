@@ -6,3 +6,4 @@ target
 .moonagent/
 .gh_token
 .env
+.gh_token.dpapi

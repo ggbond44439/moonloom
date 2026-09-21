@@ -15,6 +15,12 @@ pub(all) enum MoonLoomError {
   UnknownCodec(UInt64)
   UnknownCodecName(String)
   InvalidField(String, Int)
+  UnsupportedHashAlgorithm(String)
+  DigestLengthMismatch(String, Int, Int)
+  HashMismatch
+  InvalidMultihash(String, Int)
+  InvalidCid(String, Int)
+  CidCodecMismatch(UInt64)
 } derive(Eq, @debug.Debug)
 
 ///|
@@ -48,6 +54,22 @@ pub impl Show for MoonLoomError with fn output(self, logger) {
       logger.write_string("moonloom: unknown multicodec name '\{name}'")
     InvalidField(context, offset) =>
       logger.write_string("moonloom: invalid \{context} at byte \{offset}")
+    UnsupportedHashAlgorithm(name) =>
+      logger.write_string("moonloom: unsupported hash algorithm '\{name}'")
+    DigestLengthMismatch(name, expected, actual) =>
+      logger.write_string(
+        "moonloom: \{name} digest length mismatch: expected \{expected}, got \{actual}",
+      )
+    HashMismatch =>
+      logger.write_string("moonloom: content does not match multihash")
+    InvalidMultihash(context, offset) =>
+      logger.write_string(
+        "moonloom: invalid multihash \{context} at byte \{offset}",
+      )
+    InvalidCid(context, offset) =>
+      logger.write_string("moonloom: invalid CID \{context} at byte \{offset}")
+    CidCodecMismatch(code) =>
+      logger.write_string("moonloom: CID codec \{code} cannot use CIDv0")
   }
 }
 

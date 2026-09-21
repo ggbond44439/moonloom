@@ -3,4 +3,5 @@ import {
   "moonbitlang/core/buffer",
   "moonbitlang/core/debug",
   "moonbitlang/core/encoding/base64",
+  "moonbitstack/mooncrypt/hash/sha2",
 }

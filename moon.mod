@@ -20,3 +20,7 @@ keywords = [
 preferred_target = "wasm"
 
 description = "MoonLoom is a self-describing content-addressing toolkit for MoonBit."
+
+import {
+  "moonbitstack/mooncrypt@0.2.2",
+}

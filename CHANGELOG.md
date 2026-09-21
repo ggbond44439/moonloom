@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- Added Multihash binary encoding and strict decoding.
+- Added `identity`, `sha2-256`, and `sha2-512` hash semantics.
+- Added the `HashProvider` boundary and bundled MoonCrypt SHA-2 provider.
+- Added CIDv0 and CIDv1 encoding, parsing, canonical text output, and content
+  verification.
+- Added standard empty-content and `hello` content vectors.
+
 ## 0.1.0
 
 Initial milestone:

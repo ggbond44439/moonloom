@@ -11,28 +11,39 @@ does not reach backward into a higher layer.
 3. `varint` handles the unsigned prefix encoding used by other formats.
 4. `registry` maps stable multicodec numbers to reviewed names and categories.
 5. `multibase` converts bytes to and from self-describing text strings.
-6. Future `multihash`, `cid`, and `multiaddr` packages compose those layers.
+6. `multihash` combines a hash code, digest length, and digest.
+7. `cid` combines a version, codec, and multihash.
+8. A future `multiaddr` layer composes the same registry and varint primitives.
+
+## Hash boundary
+
+MoonLoom owns the multihash format and verification control flow. It does not
+own cryptographic primitives. `HashProvider` receives the selected algorithm
+and bytes, then returns a digest or a typed error.
+
+The bundled SHA-2 provider delegates to MoonCrypt. This keeps format behavior
+testable without mixing protocol parsing with cryptographic implementation.
 
 ## Data flow
 
 Text to binary:
 
 ```text
-Multibase text
-  -> prefix lookup
-  -> alphabet and padding validation
+CID text
+  -> Multibase prefix handling
+  -> CID version and codec decode
+  -> Multihash decode
   -> bytes
-  -> future Multihash/CID/Multiaddr decoder
 ```
 
 Binary to text:
 
 ```text
-canonical bytes
-  -> future Multihash/CID/Multiaddr encoder
-  -> bytes
-  -> selected Multibase encoder
-  -> prefixed text
+content bytes
+  -> HashProvider
+  -> Multihash
+  -> CID
+  -> canonical CID text
 ```
 
 ## Invariants
@@ -41,9 +52,11 @@ canonical bytes
   allowed.
 - A strict decoder rejects non-canonical encodings instead of normalizing them.
 - Encoders are deterministic and use the shortest valid representation.
-- Unknown registry codes remain unknown; MoonLoom never guesses a name.
+- Unknown registry and multihash codes remain unknown; MoonLoom never guesses
+  a name or silently substitutes an algorithm.
 - Resource limits are checked before allocation.
 - Public errors carry enough context to locate the failing byte.
+- CID verification is an explicit operation with an explicit provider.
 
 ## Deliberate omissions
 

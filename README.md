@@ -11,16 +11,20 @@ Multiformats ecosystem.
 
 ## Current milestone
 
-The first milestone is implemented and tested:
+The format core is implemented and tested:
 
 - Canonical unsigned varint encoding and strict decoding.
 - Multibase codecs for base16, base32, base58btc, base64, and URL-safe base64.
 - A curated multicodec registry covering CID, hash, content format, and core
   Multiaddr protocol identifiers.
+- Multihash binary encoding with `identity`, `sha2-256`, and `sha2-512`.
+- Multihash verification through an explicit hash-provider boundary.
+- CIDv0 and CIDv1 encoding, decoding, canonical text output, and content
+  verification.
 - Typed errors with byte offsets and configurable resource limits.
 - Cross-target-friendly MoonBit code with no FFI dependency.
 
-The next milestones add Multihash, CIDv0/CIDv1, Multiaddr, the CLI, and
+The remaining milestones add Multiaddr, the CLI, interop vectors, and
 Mooncakes publication.
 
 ## Quick start
@@ -29,19 +33,29 @@ Mooncakes publication.
 let encoded = @moonloom.encode_u64(300UL)
 assert_eq(encoded, b"\xac\x02")
 
-let decoded = @moonloom.decode_u64(encoded)
-assert_eq(decoded, Ok((300UL, 2)))
-
 let text = @moonloom.multibase_encode(@moonloom.Base32, b"hello")
 assert_eq(text, Ok("bnbswy3dp"))
 
-match @moonloom.multibase_decode(
-  "bnbswy3dp",
+let provider = @moonloom.sha2_provider()
+let cid = match @moonloom.cid_from_content(
+  85UL,
+  @moonloom.Sha2_256,
+  b"hello",
+  provider,
   @moonloom.Limits::default(),
 ) {
-  Ok(value) => assert_eq(value.data, b"hello")
+  Ok(value) => value
   Err(err) => fail(err.to_string())
 }
+
+assert_eq(
+  cid.to_text(),
+  Ok("bafkreibm6jg3ux5qumhcn2b3flc3tyu6dmlb4xa7u5bf44yegnrjhc4yeq"),
+)
+assert_eq(
+  cid.verify(b"hello", provider, @moonloom.Limits::default()),
+  Ok(()),
+)
 ```
 
 ## Why MoonLoom
@@ -54,34 +68,34 @@ bounded implementation.
 
 MoonLoom is useful in at least three practical scenarios:
 
-1. Create and verify a stable identifier for a build artifact or offline cache
-   entry.
-2. Parse and normalize a peer Multiaddr before handing it to a network layer.
-3. Convert CID, hash, and address fixtures between text and binary form for
-   cross-language tests.
+1. Create and verify a stable CID for a build artifact or offline cache entry.
+2. Convert CIDs, multihashes, and future Multiaddrs between text and binary for
+   cross-language protocol fixtures.
+3. Verify content obtained from a cache, mirror, or peer before accepting it.
 
 ## Design rules
 
 - Canonical output by default.
 - Strict decoding with typed errors and byte offsets.
-- Every parser is bounded by `Limits`.
+- Every parser and content verifier is bounded by `Limits`.
 - No panic for malformed external input.
 - Registry data is centralized and reviewed.
 - Text and binary round trips are deterministic.
 - Cryptographic algorithms are provided by adapters, never reimplemented here.
+- SHA-2 support is delegated to Apache-2.0 MoonCrypt.
 
 ## Build and test
 
 ```text
-moon check
-moon test
+moon check --target all
+moon test --target all
 moon build
 ```
 
 ## Status
 
 MoonLoom is under active construction for the 2026 September MoonBit
-Hackathon. Version `0.1.0` is the first internal milestone, not the final
+Hackathon. Version `0.1.0` is the internal format-core milestone, not the final
 published API.
 
 ## License

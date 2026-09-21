@@ -1,0 +1,112 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "ggbond44439/moonloom"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn decode_u64(BytesView) -> Result[(UInt64, Int), MoonLoomError]
+
+pub fn decode_u64_with_limits(BytesView, Limits) -> Result[(UInt64, Int), MoonLoomError]
+
+pub fn encode_u64(UInt64) -> Bytes
+
+pub fn multibase_decode(StringView, Limits) -> Result[DecodedMultibase, MoonLoomError]
+
+pub fn multibase_encode(Base, BytesView) -> Result[String, MoonLoomError]
+
+pub fn multicodec_code(StringView) -> UInt64?
+
+pub fn multicodec_count() -> Int
+
+pub fn multicodec_info(UInt64) -> CodecInfo?
+
+pub fn multicodec_name(UInt64) -> String?
+
+// Errors
+
+// Types and methods
+pub(all) enum Base {
+  Base16
+  Base16Upper
+  Base32
+  Base32Upper
+  Base32Pad
+  Base32PadUpper
+  Base58Btc
+  Base64
+  Base64Pad
+  Base64Url
+  Base64UrlPad
+} derive(Eq, @debug.Debug)
+pub fn Base::equal(Self, Self) -> Bool
+pub fn Base::from_prefix(Char) -> Self?
+pub fn Base::not_equal(Self, Self) -> Bool
+pub fn Base::prefix(Self) -> Char
+pub fn Base::to_repr(Self) -> @debug.Repr
+
+pub(all) enum CodecCategory {
+  Cid
+  Format
+  Hash
+  Multiaddr
+} derive(Eq, @debug.Debug)
+pub fn CodecCategory::equal(Self, Self) -> Bool
+pub fn CodecCategory::not_equal(Self, Self) -> Bool
+pub fn CodecCategory::to_repr(Self) -> @debug.Repr
+
+pub(all) struct CodecInfo {
+  code : UInt64
+  name : String
+  category : CodecCategory
+} derive(Eq, @debug.Debug)
+pub fn CodecInfo::equal(Self, Self) -> Bool
+pub fn CodecInfo::not_equal(Self, Self) -> Bool
+pub fn CodecInfo::to_repr(Self) -> @debug.Repr
+
+pub(all) struct DecodedMultibase {
+  base : Base
+  data : Bytes
+} derive(Eq, @debug.Debug)
+pub fn DecodedMultibase::equal(Self, Self) -> Bool
+pub fn DecodedMultibase::not_equal(Self, Self) -> Bool
+pub fn DecodedMultibase::to_repr(Self) -> @debug.Repr
+
+pub struct Limits {
+  max_input_bytes : Int
+  max_varint_bytes : Int
+  max_digest_bytes : Int
+  max_multiaddr_bytes : Int
+}
+pub fn Limits::check_input(Self, String, Int) -> Result[Unit, MoonLoomError]
+pub fn Limits::default() -> Self
+pub fn Limits::max_digest_bytes(Self) -> Int
+pub fn Limits::max_input_bytes(Self) -> Int
+pub fn Limits::max_multiaddr_bytes(Self) -> Int
+pub fn Limits::max_varint_bytes(Self) -> Int
+pub fn Limits::new(max_input_bytes? : Int, max_varint_bytes? : Int, max_digest_bytes? : Int, max_multiaddr_bytes? : Int) -> Self
+
+pub(all) enum MoonLoomError {
+  InputTooLong(String, Int, Int)
+  OffsetOutOfBounds(Int)
+  Truncated(String, Int)
+  InvalidVarint(String, Int)
+  NonCanonicalVarint(Int)
+  UnknownBase(Char)
+  InvalidBaseCharacter(Char, Int)
+  InvalidPadding(String, Int)
+  UnknownCodec(UInt64)
+  UnknownCodecName(String)
+  InvalidField(String, Int)
+} derive(Eq, @debug.Debug)
+pub fn MoonLoomError::equal(Self, Self) -> Bool
+pub fn MoonLoomError::not_equal(Self, Self) -> Bool
+pub fn MoonLoomError::output(Self, &Logger) -> Unit
+pub fn MoonLoomError::to_repr(Self) -> @debug.Repr
+pub fn MoonLoomError::to_string(Self) -> String
+pub impl Show for MoonLoomError
+
+// Type aliases
+
+// Traits

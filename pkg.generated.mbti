@@ -6,6 +6,14 @@ import {
 }
 
 // Values
+pub const CID_VERSION_1 : UInt64 = 1
+
+pub const DAG_PB_CODEC : UInt64 = 112
+
+pub fn cid_from_content(UInt64, HashAlgorithm, BytesView, HashProvider, Limits) -> Result[Cid, MoonLoomError]
+
+pub fn cid_v0_from_content(BytesView, HashProvider, Limits) -> Result[Cid, MoonLoomError]
+
 pub fn decode_u64(BytesView) -> Result[(UInt64, Int), MoonLoomError]
 
 pub fn decode_u64_with_limits(BytesView, Limits) -> Result[(UInt64, Int), MoonLoomError]
@@ -23,6 +31,8 @@ pub fn multicodec_count() -> Int
 pub fn multicodec_info(UInt64) -> CodecInfo?
 
 pub fn multicodec_name(UInt64) -> String?
+
+pub fn sha2_provider() -> HashProvider
 
 // Errors
 
@@ -45,6 +55,22 @@ pub fn Base::from_prefix(Char) -> Self?
 pub fn Base::not_equal(Self, Self) -> Bool
 pub fn Base::prefix(Self) -> Char
 pub fn Base::to_repr(Self) -> @debug.Repr
+
+pub(all) struct Cid {
+  version : UInt64
+  codec : UInt64
+  hash : Multihash
+} derive(Eq, @debug.Debug)
+pub fn Cid::decode_bytes(BytesView, Limits) -> Result[Self, MoonLoomError]
+pub fn Cid::equal(Self, Self) -> Bool
+pub fn Cid::not_equal(Self, Self) -> Bool
+pub fn Cid::parse(StringView, Limits) -> Result[Self, MoonLoomError]
+pub fn Cid::to_bytes(Self) -> Bytes
+pub fn Cid::to_repr(Self) -> @debug.Repr
+pub fn Cid::to_text(Self) -> Result[String, MoonLoomError]
+pub fn Cid::v0(Multihash, Limits) -> Result[Self, MoonLoomError]
+pub fn Cid::v1(UInt64, Multihash, Limits) -> Result[Self, MoonLoomError]
+pub fn Cid::verify(Self, BytesView, HashProvider, Limits) -> Result[Unit, MoonLoomError]
 
 pub(all) enum CodecCategory {
   Cid
@@ -73,6 +99,25 @@ pub fn DecodedMultibase::equal(Self, Self) -> Bool
 pub fn DecodedMultibase::not_equal(Self, Self) -> Bool
 pub fn DecodedMultibase::to_repr(Self) -> @debug.Repr
 
+pub(all) enum HashAlgorithm {
+  Identity
+  Sha2_256
+  Sha2_512
+} derive(Eq, @debug.Debug)
+pub fn HashAlgorithm::code(Self) -> UInt64
+pub fn HashAlgorithm::equal(Self, Self) -> Bool
+pub fn HashAlgorithm::expected_digest_size(Self) -> Int?
+pub fn HashAlgorithm::from_code(UInt64) -> Self?
+pub fn HashAlgorithm::name(Self) -> String
+pub fn HashAlgorithm::not_equal(Self, Self) -> Bool
+pub fn HashAlgorithm::to_repr(Self) -> @debug.Repr
+
+pub struct HashProvider {
+  digest : (HashAlgorithm, BytesView) -> Result[Bytes, MoonLoomError]
+}
+pub fn HashProvider::hash(Self, HashAlgorithm, BytesView) -> Result[Bytes, MoonLoomError]
+pub fn HashProvider::new((HashAlgorithm, BytesView) -> Result[Bytes, MoonLoomError]) -> Self
+
 pub struct Limits {
   max_input_bytes : Int
   max_varint_bytes : Int
@@ -99,6 +144,12 @@ pub(all) enum MoonLoomError {
   UnknownCodec(UInt64)
   UnknownCodecName(String)
   InvalidField(String, Int)
+  UnsupportedHashAlgorithm(String)
+  DigestLengthMismatch(String, Int, Int)
+  HashMismatch
+  InvalidMultihash(String, Int)
+  InvalidCid(String, Int)
+  CidCodecMismatch(UInt64)
 } derive(Eq, @debug.Debug)
 pub fn MoonLoomError::equal(Self, Self) -> Bool
 pub fn MoonLoomError::not_equal(Self, Self) -> Bool
@@ -106,6 +157,22 @@ pub fn MoonLoomError::output(Self, &Logger) -> Unit
 pub fn MoonLoomError::to_repr(Self) -> @debug.Repr
 pub fn MoonLoomError::to_string(Self) -> String
 pub impl Show for MoonLoomError
+
+pub(all) struct Multihash {
+  code : UInt64
+  digest : Bytes
+} derive(Eq, @debug.Debug)
+pub fn Multihash::algorithm(Self) -> HashAlgorithm?
+pub fn Multihash::create(HashAlgorithm, BytesView, Limits) -> Result[Self, MoonLoomError]
+pub fn Multihash::decode(BytesView, Limits) -> Result[(Self, Int), MoonLoomError]
+pub fn Multihash::encode(Self) -> Bytes
+pub fn Multihash::equal(Self, Self) -> Bool
+pub fn Multihash::from_text(StringView, Limits) -> Result[Self, MoonLoomError]
+pub fn Multihash::identity(BytesView, Limits) -> Result[Self, MoonLoomError]
+pub fn Multihash::not_equal(Self, Self) -> Bool
+pub fn Multihash::to_repr(Self) -> @debug.Repr
+pub fn Multihash::to_text(Self, Base) -> Result[String, MoonLoomError]
+pub fn Multihash::verify(Self, BytesView, HashProvider, Limits) -> Result[Unit, MoonLoomError]
 
 // Type aliases
 

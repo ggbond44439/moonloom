@@ -1,0 +1,5 @@
+// import {
+//   "moonloom/moonloom" @lib,
+// }
+
+pkgtype(kind: "executable")

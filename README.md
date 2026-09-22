@@ -23,6 +23,8 @@ The format core is implemented and tested:
   verification.
 - A typed Multiaddr domain model with reusable protocol, protocol-value,
   path-segment, IPv4, and IPv6 types.
+- A strict Multiaddr text parser for supported IP, DNS, port, peer, and unit
+  protocols.
 - Typed errors with byte offsets and configurable resource limits.
 - Stable public API conventions for construction, parsing, verification, and
   extension seams, documented in `docs/api-contracts.md`.

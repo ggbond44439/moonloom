@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Added strict Multiaddr text parsing for IPv4, IPv6, DNS, TCP, UDP, p2p, and
+  unit-valued web protocols.
 - Added the shared `ProtocolInfo` registry for Multiaddr protocol metadata.
 - Removed duplicated protocol code/name/value-kind mappings from Multiaddr.
 - Added the typed Multiaddr domain model and protocol/value validation.

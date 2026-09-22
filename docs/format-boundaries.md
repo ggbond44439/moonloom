@@ -133,8 +133,16 @@ Rules:
 - DNS and peer identifiers must be non-empty and at most 255 UTF-16 code units.
 - IPv4 values are exactly four bytes; IPv6 values are exactly sixteen bytes.
 - Unknown protocol codes remain representable as `Protocol::Unknown(code)`.
-- Text parsing and binary encoding are deliberately deferred to the next
-  milestones.
+Text parsing rules:
+
+- The whole value must start with `/`; an empty string represents an empty
+  Multiaddr.
+- Protocol names are resolved through the shared registry.
+- Unit protocols (`http`, `https`, `ws`, `wss`) must not have a value.
+- IPv4 parsing is strict dotted decimal.
+- IPv6 parsing supports `::` compression and rejects ambiguous compression.
+- DNS and peer strings are currently ASCII-only and bounded to 255 code units.
+- Binary encoding is deliberately deferred to the next milestone.
 
 ## Limits
 

@@ -146,17 +146,10 @@ pub fn Multihash::algorithm(self : Multihash) -> HashAlgorithm? {
 
 ///|
 pub fn Multihash::encode(self : Multihash) -> Bytes {
-  let out = @buffer.Buffer(size_hint=self.digest.length() + 10)
-  for byte in encode_u64(self.code) {
-    out.write_byte(byte)
-  }
-  for byte in encode_u64(self.digest.length().to_uint64()) {
-    out.write_byte(byte)
-  }
-  for byte in self.digest {
-    out.write_byte(byte)
-  }
-  out.to_bytes()
+  let writer = WireWriter::new()
+  writer.write_varint(self.code)
+  writer.write_length_prefixed(self.digest)
+  writer.to_bytes()
 }
 
 ///|
@@ -164,46 +157,33 @@ pub fn Multihash::decode(
   input : BytesView,
   limits : Limits,
 ) -> Result[(Multihash, Int), MoonLoomError] {
-  match limits.check_input("multihash", input.length()) {
-    Ok(_) => ()
+  let reader = match WireReader::new(input, limits) {
+    Ok(value) => value
     Err(err) => return Err(err)
   }
-  match decode_u64_with_limits(input, limits) {
-    Ok((code, code_length)) => {
-      if code_length >= input.length() {
-        return Err(Truncated("multihash digest length", code_length))
-      }
-      match decode_u64_with_limits(input[code_length:], limits) {
-        Ok((digest_length, length_bytes)) => {
-          let digest_start = code_length + length_bytes
-          if digest_length > limits.max_digest_bytes().to_uint64() {
-            return Err(
-              InputTooLong(
-                "multihash digest",
-                limits.max_digest_bytes(),
-                digest_length.to_int(),
-              ),
-            )
-          }
-          let digest_size = digest_length.to_int()
-          if digest_start + digest_size > input.length() {
-            return Err(Truncated("multihash digest", digest_start))
-          }
-          Ok(
-            (
-              {
-                code,
-                digest: input[digest_start:digest_start + digest_size].to_owned(),
-              },
-              digest_start + digest_size,
-            ),
-          )
-        }
-        Err(err) => Err(err)
-      }
-    }
-    Err(err) => Err(err)
+  let code = match reader.read_varint("multihash code") {
+    Ok(value) => value
+    Err(err) => return Err(err)
   }
+  let digest_length = match reader.read_varint("multihash digest length") {
+    Ok(value) => value
+    Err(err) => return Err(err)
+  }
+  if digest_length > limits.max_digest_bytes().to_uint64() {
+    return Err(
+      InputTooLong(
+        "multihash digest",
+        limits.max_digest_bytes(),
+        digest_length.to_int(),
+      ),
+    )
+  }
+  let digest_size = digest_length.to_int()
+  let digest = match reader.read_fixed("multihash digest", digest_size) {
+    Ok(value) => value
+    Err(err) => return Err(err)
+  }
+  Ok(({ code, digest: digest.to_owned(), }, reader.position()))
 }
 
 ///|

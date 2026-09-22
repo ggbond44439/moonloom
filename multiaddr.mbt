@@ -531,66 +531,13 @@ pub fn Multiaddr::parse(
 }
 
 ///|
-fn write_bytes(buffer : @buffer.Buffer, bytes : BytesView) -> Unit {
-  for byte in bytes {
-    buffer.write_byte(byte)
-  }
-}
-
-///|
-fn write_length_prefixed(buffer : @buffer.Buffer, bytes : BytesView) -> Unit {
-  write_bytes(buffer, encode_u64(bytes.length().to_uint64()))
-  write_bytes(buffer, bytes)
-}
-
-///|
-fn read_fixed(
-  input : BytesView,
-  offset : Int,
-  length : Int,
-  context : String,
-) -> Result[BytesView, MoonLoomError] {
-  if offset + length > input.length() {
-    Err(Truncated(context, offset))
-  } else {
-    Ok(input[offset:offset + length])
-  }
-}
-
-///|
-fn read_length_prefixed(
-  input : BytesView,
-  offset : Int,
-  limits : Limits,
-  context : String,
-) -> Result[(BytesView, Int), MoonLoomError] {
-  if offset >= input.length() {
-    return Err(Truncated(context, offset))
-  }
-  match decode_u64_with_limits(input[offset:], limits) {
-    Ok((length, consumed)) => {
-      if length > limits.max_input_bytes().to_uint64() {
-        return Err(
-          InputTooLong(context, limits.max_input_bytes(), length.to_int()),
-        )
-      }
-      let size = length.to_int()
-      let start = offset + consumed
-      match read_fixed(input, start, size, context) {
-        Ok(bytes) => Ok((bytes, start + size))
-        Err(err) => Err(err)
-      }
-    }
-    Err(err) => Err(err)
-  }
-}
 
 ///|
 pub fn Multiaddr::to_bytes(
   self : Multiaddr,
   limits : Limits,
 ) -> Result[Bytes, MoonLoomError] {
-  let out = @buffer.Buffer()
+  let writer = WireWriter::new()
   for segment in self.segments {
     let protocol = segment.protocol()
     match protocol {
@@ -598,29 +545,28 @@ pub fn Multiaddr::to_bytes(
         return Err(UnknownProtocol("protocol-" + code.to_string()))
       _ => ()
     }
-    write_bytes(out, encode_u64(protocol.code()))
+    writer.write_varint(protocol.code())
     match segment.value() {
       Empty => ()
-      Ipv4(value) => write_bytes(out, value.octets())
-      Ipv6(value) => write_bytes(out, value.octets())
-      Domain(value) => write_length_prefixed(out, @utf8.encode(value[:]))
+      Ipv4(value) => writer.write_bytes(value.octets())
+      Ipv6(value) => writer.write_bytes(value.octets())
+      Domain(value) => writer.write_length_prefixed(@utf8.encode(value[:]))
       Port(value) => {
         if value < 0 || value > 65535 {
           return Err(InvalidPort(value))
         }
-        out.write_byte((value >> 8).to_byte())
-        out.write_byte((value & 0xFF).to_byte())
+        writer.write_u16_be(value)
       }
       PeerId(value) =>
         match decode_base58(value[:]) {
-          Ok(bytes) => write_length_prefixed(out, bytes)
+          Ok(bytes) => writer.write_length_prefixed(bytes)
           Err(_) => return Err(InvalidProtocolValue("p2p"))
         }
       Text(_) | Raw(_) =>
         return Err(InvalidProtocolValue(protocol.diagnostic_name()))
     }
   }
-  let bytes = out.to_bytes()
+  let bytes = writer.to_bytes()
   match limits.check_multiaddr(bytes.length()) {
     Ok(_) => Ok(bytes)
     Err(err) => Err(err)
@@ -632,92 +578,78 @@ pub fn Multiaddr::parse_bytes(
   input : BytesView,
   limits : Limits,
 ) -> Result[Multiaddr, MoonLoomError] {
+  let reader = match WireReader::new(input, limits) {
+    Ok(value) => value
+    Err(err) => return Err(err)
+  }
   match limits.check_multiaddr(input.length()) {
     Ok(_) => ()
     Err(err) => return Err(err)
   }
   let segments : Array[PathSegment] = []
-  let mut offset = 0
-  while offset < input.length() {
-    match decode_u64_with_limits(input[offset:], limits) {
-      Ok((code, consumed)) => {
-        offset += consumed
-        let protocol = Protocol::from_code(code)
-        match protocol {
-          Unknown(_) =>
-            return Err(UnknownProtocol("protocol-" + code.to_string()))
-          _ => ()
-        }
-        let value = match protocol.expected_value_kind() {
-          Empty => ProtocolValue::Empty
-          Ipv4 => {
-            let bytes = match read_fixed(input, offset, 4, "ip4") {
-              Ok(value) => value
-              Err(err) => return Err(err)
-            }
-            offset += 4
-            match Ipv4Address::from_octets(bytes) {
-              Ok(value) => ProtocolValue::Ipv4(value)
-              Err(err) => return Err(err)
-            }
-          }
-          Ipv6 => {
-            let bytes = match read_fixed(input, offset, 16, "ip6") {
-              Ok(value) => value
-              Err(err) => return Err(err)
-            }
-            offset += 16
-            match Ipv6Address::from_octets(bytes) {
-              Ok(value) => ProtocolValue::Ipv6(value)
-              Err(err) => return Err(err)
-            }
-          }
-          Domain => {
-            let bytes = match
-              read_length_prefixed(input, offset, limits, "dns") {
-              Ok((value, next)) => {
-                offset = next
-                value
-              }
-              Err(err) => return Err(err)
-            }
-            let decoded = @utf8.decode(bytes) catch {
-              _ => return Err(InvalidProtocolValue(protocol.diagnostic_name()))
-            }
-            ProtocolValue::Domain(decoded)
-          }
-          Port => {
-            let bytes = match
-              read_fixed(input, offset, 2, protocol.diagnostic_name()) {
-              Ok(value) => value
-              Err(err) => return Err(err)
-            }
-            offset += 2
-            let value = (bytes[0].to_int() << 8) | bytes[1].to_int()
-            ProtocolValue::Port(value)
-          }
-          PeerId => {
-            let bytes = match
-              read_length_prefixed(input, offset, limits, "p2p") {
-              Ok((value, next)) => {
-                offset = next
-                value
-              }
-              Err(err) => return Err(err)
-            }
-            ProtocolValue::PeerId(encode_base58(bytes))
-          }
-          Text | Raw =>
-            return Err(InvalidProtocolValue(protocol.diagnostic_name()))
-        }
-        let segment = match PathSegment::new(protocol, value) {
+  while !reader.is_done() {
+    let code = match reader.read_varint("multiaddr protocol") {
+      Ok(value) => value
+      Err(err) => return Err(err)
+    }
+    let protocol = Protocol::from_code(code)
+    match protocol {
+      Unknown(_) => return Err(UnknownProtocol("protocol-" + code.to_string()))
+      _ => ()
+    }
+    let value = match protocol.expected_value_kind() {
+      Empty => ProtocolValue::Empty
+      Ipv4 => {
+        let bytes = match reader.read_fixed("ip4", 4) {
           Ok(value) => value
           Err(err) => return Err(err)
         }
-        segments.push(segment)
+        match Ipv4Address::from_octets(bytes) {
+          Ok(value) => ProtocolValue::Ipv4(value)
+          Err(err) => return Err(err)
+        }
       }
+      Ipv6 => {
+        let bytes = match reader.read_fixed("ip6", 16) {
+          Ok(value) => value
+          Err(err) => return Err(err)
+        }
+        match Ipv6Address::from_octets(bytes) {
+          Ok(value) => ProtocolValue::Ipv6(value)
+          Err(err) => return Err(err)
+        }
+      }
+      Domain => {
+        let bytes = match reader.read_length_prefixed("dns") {
+          Ok(value) => value
+          Err(err) => return Err(err)
+        }
+        let decoded = @utf8.decode(bytes) catch {
+          _ => return Err(InvalidProtocolValue(protocol.diagnostic_name()))
+        }
+        ProtocolValue::Domain(decoded)
+      }
+      Port => {
+        let port = match reader.read_u16_be(protocol.diagnostic_name()) {
+          Ok(value) => value
+          Err(err) => return Err(err)
+        }
+        ProtocolValue::Port(port)
+      }
+      PeerId => {
+        let bytes = match reader.read_length_prefixed("p2p") {
+          Ok(value) => value
+          Err(err) => return Err(err)
+        }
+        ProtocolValue::PeerId(encode_base58(bytes))
+      }
+      Text | Raw => return Err(InvalidProtocolValue(protocol.diagnostic_name()))
+    }
+    let segment = match PathSegment::new(protocol, value) {
+      Ok(value) => value
       Err(err) => return Err(err)
     }
+    segments.push(segment)
   }
   Multiaddr::from_segments(segments, limits)
 }

@@ -52,26 +52,15 @@ pub fn Cid::v0(hash : Multihash, limits : Limits) -> Result[Cid, MoonLoomError] 
 
 ///|
 pub fn Cid::to_bytes(self : Cid) -> Bytes {
+  let writer = WireWriter::new()
   if self.version == 0UL {
-    self.hash.encode()
+    writer.write_bytes(self.hash.encode())
   } else {
-    let encoded_hash = self.hash.encode()
-    let version = encode_u64(self.version)
-    let codec = encode_u64(self.codec)
-    let out = @buffer.Buffer(
-      size_hint=version.length() + codec.length() + encoded_hash.length(),
-    )
-    for byte in version {
-      out.write_byte(byte)
-    }
-    for byte in codec {
-      out.write_byte(byte)
-    }
-    for byte in encoded_hash {
-      out.write_byte(byte)
-    }
-    out.to_bytes()
+    writer.write_varint(self.version)
+    writer.write_varint(self.codec)
+    writer.write_bytes(self.hash.encode())
   }
+  writer.to_bytes()
 }
 
 ///|

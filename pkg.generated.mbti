@@ -2,6 +2,7 @@
 package "ggbond44439/moonloom"
 
 import {
+  "moonbitlang/core/buffer",
   "moonbitlang/core/debug",
 }
 
@@ -321,6 +322,33 @@ pub(all) enum ProtocolValueKind {
 pub fn ProtocolValueKind::equal(Self, Self) -> Bool
 pub fn ProtocolValueKind::not_equal(Self, Self) -> Bool
 pub fn ProtocolValueKind::to_repr(Self) -> @debug.Repr
+
+pub struct WireReader {
+  input : BytesView
+  mut offset : Int
+  limits : Limits
+}
+pub fn WireReader::is_done(Self) -> Bool
+pub fn WireReader::new(BytesView, Limits) -> Result[Self, MoonLoomError]
+pub fn WireReader::position(Self) -> Int
+pub fn WireReader::read_fixed(Self, String, Int) -> Result[BytesView, MoonLoomError]
+pub fn WireReader::read_length_prefixed(Self, String) -> Result[BytesView, MoonLoomError]
+pub fn WireReader::read_u16_be(Self, String) -> Result[Int, MoonLoomError]
+pub fn WireReader::read_varint(Self, String) -> Result[UInt64, MoonLoomError]
+pub fn WireReader::remaining(Self) -> Int
+pub fn WireReader::remaining_view(Self) -> BytesView
+
+pub struct WireWriter {
+  buffer : @buffer.Buffer
+}
+pub fn WireWriter::length(Self) -> Int
+pub fn WireWriter::new() -> Self
+pub fn WireWriter::to_bytes(Self) -> Bytes
+pub fn WireWriter::write_byte(Self, Byte) -> Unit
+pub fn WireWriter::write_bytes(Self, BytesView) -> Unit
+pub fn WireWriter::write_length_prefixed(Self, BytesView) -> Unit
+pub fn WireWriter::write_u16_be(Self, Int) -> Unit
+pub fn WireWriter::write_varint(Self, UInt64) -> Unit
 
 // Type aliases
 

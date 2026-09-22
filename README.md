@@ -25,6 +25,8 @@ The format core is implemented and tested:
   path-segment, IPv4, and IPv6 types.
 - A strict Multiaddr text parser for supported IP, DNS, port, peer, and unit
   protocols.
+- Deterministic Multiaddr binary encoding and decoding using the shared varint
+  and protocol registry.
 - Typed errors with byte offsets and configurable resource limits.
 - Stable public API conventions for construction, parsing, verification, and
   extension seams, documented in `docs/api-contracts.md`.

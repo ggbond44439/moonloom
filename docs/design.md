@@ -14,8 +14,8 @@ does not reach backward into a higher layer.
 5. `multibase` converts bytes to and from self-describing text strings.
 6. `multihash` combines a hash code, digest length, and digest.
 7. `cid` combines a version, codec, and multihash.
-8. `multiaddr` models protocols, typed values, path segments, and the strict
-   text parser; binary codecs are attached next.
+8. `multiaddr` models protocols, typed values, path segments, and both text
+   and binary codecs.
 
 ## Hash boundary
 
@@ -40,7 +40,7 @@ CID text
 Multiaddr text
   -> registry-driven protocol/value parser
   -> typed Multiaddr model
-  -> future binary protocol codec
+  -> deterministic binary encoder
 ```
 
 Binary to text:

@@ -142,7 +142,17 @@ Text parsing rules:
 - IPv4 parsing is strict dotted decimal.
 - IPv6 parsing supports `::` compression and rejects ambiguous compression.
 - DNS and peer strings are currently ASCII-only and bounded to 255 code units.
-- Binary encoding is deliberately deferred to the next milestone.
+Binary format:
+
+- Protocol identifiers use unsigned varints from the shared protocol registry.
+- IPv4 and IPv6 use fixed-width network-order bytes.
+- DNS values use a varint byte length followed by UTF-8 bytes.
+- TCP and UDP use two-byte network-order ports.
+- Peer identifiers use a varint byte length followed by the decoded base58btc
+  multihash bytes.
+- Unit protocols carry no payload.
+- Unknown protocol codes are rejected because their payload boundary is not
+  known without a protocol-specific codec.
 
 ## Limits
 

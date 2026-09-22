@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Added Multibase and Multihash CLI commands with JSON output.
 - Added the reusable CLI parsing and result layer.
 - Added process entry-point wiring for help and version commands.
 - Added reusable bounded wire reader/writer primitives.

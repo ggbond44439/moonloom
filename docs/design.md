@@ -18,7 +18,8 @@ does not reach backward into a higher layer.
 8. `multiaddr` models protocols, typed values, path segments, text and binary
    codecs, and canonical text rendering.
 9. `cli` parses command invocations and returns structured results without
-   depending on process I/O.
+   depending on process I/O; format-specific command modules call public library
+   APIs only.
 10. `cmd/main` is only the executable adapter around the CLI package.
 
 ## Hash boundary

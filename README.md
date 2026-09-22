@@ -30,6 +30,8 @@ The format core is implemented and tested:
 - Canonical Multiaddr text output with RFC 5952 IPv6 compression.
 - A reusable `cli` package with process-independent command parsing, help,
   version, global `--json`, and deterministic exit codes.
+- Multibase and Multihash CLI commands for encoding, digesting, inspection, and
+  verification.
 - Typed errors with byte offsets and configurable resource limits.
 - Reusable bounded `WireReader` and `WireWriter` primitives shared by all
   Multiformats codecs.

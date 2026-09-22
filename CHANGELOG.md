@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Added the reusable CLI parsing and result layer.
+- Added process entry-point wiring for help and version commands.
 - Added reusable bounded wire reader/writer primitives.
 - Refactored Multihash and Multiaddr binary codecs onto the shared wire layer.
 - Added canonical Multiaddr text output with RFC 5952 IPv6 compression.

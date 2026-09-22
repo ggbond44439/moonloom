@@ -50,6 +50,8 @@ raw fields directly.
   protocol/value combinations cannot enter the typed model.
 - Future Multiaddr protocol codecs must consume registry metadata instead of
   hard-coding protocol names in parser branches.
+- Binary protocol layers must use `WireReader` and `WireWriter` instead of
+  maintaining private cursor or append logic.
 
 ## Compatibility
 

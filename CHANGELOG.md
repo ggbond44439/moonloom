@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Added reusable bounded wire reader/writer primitives.
+- Refactored Multihash and Multiaddr binary codecs onto the shared wire layer.
 - Added canonical Multiaddr text output with RFC 5952 IPv6 compression.
 - Added Multiaddr binary encoding and decoding with known-vector tests.
 - Added strict Multiaddr text parsing for IPv4, IPv6, DNS, TCP, UDP, p2p, and

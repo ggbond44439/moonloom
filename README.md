@@ -29,6 +29,8 @@ The format core is implemented and tested:
   and protocol registry.
 - Canonical Multiaddr text output with RFC 5952 IPv6 compression.
 - Typed errors with byte offsets and configurable resource limits.
+- Reusable bounded `WireReader` and `WireWriter` primitives shared by all
+  Multiformats codecs.
 - Stable public API conventions for construction, parsing, verification, and
   extension seams, documented in `docs/api-contracts.md`.
 - Cross-target-friendly MoonBit code with no FFI dependency.

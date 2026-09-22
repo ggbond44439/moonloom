@@ -154,3 +154,149 @@ test "protocol value kind is explicit" {
     @moonloom.ProtocolValueKind::Text,
   )
 }
+
+///|
+test "Multiaddr text parser accepts IPv4, IPv6, DNS and unit protocols" {
+  let parsed = match
+    @moonloom.Multiaddr::parse(
+      "/ip4/127.0.0.1/tcp/8080/https",
+      @moonloom.Limits::default(),
+    ) {
+    Ok(value) => value
+    Err(err) => fail(err.to_string())
+  }
+  assert_eq(parsed.length(), 3)
+  match parsed.get(0) {
+    Some(segment) => {
+      assert_eq(segment.protocol(), @moonloom.Ip4)
+      assert_eq(
+        segment.value(),
+        @moonloom.ProtocolValue::Ipv4(
+          @moonloom.Ipv4Address::from_octets(b"\x7f\x00\x00\x01").unwrap(),
+        ),
+      )
+    }
+    None => fail("missing ip4 segment")
+  }
+  match parsed.get(2) {
+    Some(segment) => assert_eq(segment.value(), @moonloom.ProtocolValue::Empty)
+    None => fail("missing https segment")
+  }
+
+  let dns = match
+    @moonloom.Multiaddr::parse(
+      "/dns4/example.com/udp/443",
+      @moonloom.Limits::default(),
+    ) {
+    Ok(value) => value
+    Err(err) => fail(err.to_string())
+  }
+  assert_eq(dns.length(), 2)
+
+  let ipv6 = match
+    @moonloom.Multiaddr::parse(
+      "/ip6/2001:db8::1/udp/53",
+      @moonloom.Limits::default(),
+    ) {
+    Ok(value) => value
+    Err(err) => fail(err.to_string())
+  }
+  match ipv6.get(0) {
+    Some(segment) => {
+      let expected = match
+        @moonloom.Ipv6Address::from_octets(
+          b"\x20\x01\x0d\xb8\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01",
+        ) {
+        Ok(value) => value
+        Err(err) => fail(err.to_string())
+      }
+      assert_eq(segment.value(), @moonloom.ProtocolValue::Ipv6(expected))
+    }
+    None => fail("missing ip6 segment")
+  }
+}
+
+///|
+test "Multiaddr text parser rejects malformed paths and values" {
+  let limits = @moonloom.Limits::default()
+  assert_eq(
+    @moonloom.Multiaddr::parse("ip4/127.0.0.1", limits),
+    Err(@moonloom.InvalidField("multiaddr prefix", 0)),
+  )
+  assert_eq(
+    @moonloom.Multiaddr::parse("/ip4/127.0.0.1/", limits),
+    Err(@moonloom.InvalidField("multiaddr protocol", 3)),
+  )
+  assert_eq(
+    @moonloom.Multiaddr::parse("/ip4/999.0.0.1", limits),
+    Err(@moonloom.InvalidProtocolValue("ip4")),
+  )
+  assert_eq(
+    @moonloom.Multiaddr::parse("/tcp/65536", limits),
+    Err(@moonloom.InvalidProtocolValue("tcp")),
+  )
+  assert_eq(
+    @moonloom.Multiaddr::parse("/tcp", limits),
+    Err(@moonloom.Truncated("multiaddr value", 2)),
+  )
+  assert_eq(
+    @moonloom.Multiaddr::parse("/unknown/1", limits),
+    Err(@moonloom.UnknownProtocol("unknown")),
+  )
+}
+
+///|
+test "Multiaddr text parser handles empty and absolute paths" {
+  let empty = match
+    @moonloom.Multiaddr::parse("", @moonloom.Limits::default()) {
+    Ok(value) => value
+    Err(err) => fail(err.to_string())
+  }
+  assert_eq(empty.length(), 0)
+  assert_eq(
+    @moonloom.Multiaddr::parse("/", @moonloom.Limits::default()),
+    Err(@moonloom.InvalidField("multiaddr protocol", 1)),
+  )
+}
+
+///|
+test "Multiaddr IPv6 parsing handles full and compressed forms" {
+  let limits = @moonloom.Limits::default()
+  let full = match
+    @moonloom.Multiaddr::parse(
+      "/ip6/2001:0db8:0000:0000:0000:0000:0000:0001", limits,
+    ) {
+    Ok(value) => value
+    Err(err) => fail(err.to_string())
+  }
+  let compressed = match
+    @moonloom.Multiaddr::parse("/ip6/2001:db8::1", limits) {
+    Ok(value) => value
+    Err(err) => fail(err.to_string())
+  }
+  assert_eq(full, compressed)
+  assert_eq(
+    @moonloom.Multiaddr::parse("/ip6/2001:db8::1::2", limits),
+    Err(@moonloom.InvalidProtocolValue("ip6")),
+  )
+}
+
+///|
+test "Multiaddr unit protocols and peer IDs are typed" {
+  let limits = @moonloom.Limits::default()
+  let web = match
+    @moonloom.Multiaddr::parse("/dns/example.com/tcp/443/https", limits) {
+    Ok(value) => value
+    Err(err) => fail(err.to_string())
+  }
+  assert_eq(web.length(), 3)
+  let peer = match @moonloom.Multiaddr::parse("/p2p/QmPeer", limits) {
+    Ok(value) => value
+    Err(err) => fail(err.to_string())
+  }
+  match peer.get(0) {
+    Some(segment) =>
+      assert_eq(segment.value(), @moonloom.ProtocolValue::PeerId("QmPeer"))
+    None => fail("missing peer segment")
+  }
+}

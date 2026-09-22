@@ -198,6 +198,7 @@ pub(all) enum MoonLoomError {
   InvalidCodec(UInt64)
   InvalidProtocolValue(String)
   InvalidPort(Int)
+  UnknownProtocol(String)
 } derive(Eq, @debug.Debug)
 pub fn MoonLoomError::equal(Self, Self) -> Bool
 pub fn MoonLoomError::not_equal(Self, Self) -> Bool
@@ -216,6 +217,7 @@ pub fn Multiaddr::get(Self, Int) -> PathSegment?
 pub fn Multiaddr::is_empty(Self) -> Bool
 pub fn Multiaddr::length(Self) -> Int
 pub fn Multiaddr::not_equal(Self, Self) -> Bool
+pub fn Multiaddr::parse(StringView, Limits) -> Result[Self, MoonLoomError]
 pub fn Multiaddr::push(Self, PathSegment, Limits) -> Result[Self, MoonLoomError]
 pub fn Multiaddr::segments(Self) -> ArrayView[PathSegment]
 pub fn Multiaddr::to_repr(Self) -> @debug.Repr

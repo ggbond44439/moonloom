@@ -297,6 +297,240 @@ pub fn Multiaddr::push(
 }
 
 ///|
+fn parse_decimal_bounded(input : StringView, maximum : Int) -> Int? {
+  if input.length() == 0 {
+    return None
+  }
+  let mut value = 0
+  for code_unit in input.code_units() {
+    let code = code_unit.to_int()
+    if code < 48 || code > 57 {
+      return None
+    }
+    value = value * 10 + (code - 48)
+    if value > maximum {
+      return None
+    }
+  }
+  Some(value)
+}
+
+///|
+fn parse_ipv4_text(input : StringView) -> Result[Ipv4Address, MoonLoomError] {
+  let parts : Array[Int] = []
+  for part in input.split(".") {
+    match parse_decimal_bounded(part, 255) {
+      Some(value) => parts.push(value)
+      None => return Err(InvalidProtocolValue("ip4"))
+    }
+  }
+  if parts.length() != 4 {
+    return Err(InvalidProtocolValue("ip4"))
+  }
+  Ipv4Address::new(parts[0], parts[1], parts[2], parts[3])
+}
+
+///|
+fn parse_hex_group(input : StringView) -> Int? {
+  if input.length() == 0 || input.length() > 4 {
+    return None
+  }
+  let mut value = 0
+  for code_unit in input.code_units() {
+    let code = code_unit.to_int()
+    let digit = if code >= 48 && code <= 57 {
+      code - 48
+    } else if code >= 97 && code <= 102 {
+      code - 97 + 10
+    } else if code >= 65 && code <= 70 {
+      code - 65 + 10
+    } else {
+      return None
+    }
+    value = (value << 4) | digit
+  }
+  Some(value)
+}
+
+///|
+fn parse_ipv6_side(
+  input : StringView,
+  groups : Array[Int],
+) -> Result[Unit, MoonLoomError] {
+  if input.length() == 0 {
+    return Ok(())
+  }
+  for part in input.split(":") {
+    match parse_hex_group(part) {
+      Some(value) => groups.push(value)
+      None => return Err(InvalidProtocolValue("ip6"))
+    }
+  }
+  Ok(())
+}
+
+///|
+fn parse_ipv6_text(input : StringView) -> Result[Ipv6Address, MoonLoomError] {
+  let sides : Array[StringView] = []
+  for side in input.split("::") {
+    sides.push(side)
+  }
+  let groups : Array[Int] = []
+  if sides.length() == 1 {
+    match parse_ipv6_side(sides[0], groups) {
+      Ok(_) => ()
+      Err(err) => return Err(err)
+    }
+    if groups.length() != 8 {
+      return Err(InvalidProtocolValue("ip6"))
+    }
+  } else if sides.length() == 2 {
+    match parse_ipv6_side(sides[0], groups) {
+      Ok(_) => ()
+      Err(err) => return Err(err)
+    }
+    let right : Array[Int] = []
+    match parse_ipv6_side(sides[1], right) {
+      Ok(_) => ()
+      Err(err) => return Err(err)
+    }
+    if groups.length() + right.length() >= 8 {
+      return Err(InvalidProtocolValue("ip6"))
+    }
+    let missing = 8 - groups.length() - right.length()
+    for _ in 0..<missing {
+      groups.push(0)
+    }
+    for value in right {
+      groups.push(value)
+    }
+  } else {
+    return Err(InvalidProtocolValue("ip6"))
+  }
+  let out = @buffer.Buffer(size_hint=16)
+  for group in groups {
+    out.write_byte((group >> 8).to_byte())
+    out.write_byte((group & 0xFF).to_byte())
+  }
+  Ipv6Address::from_octets(out.to_bytes())
+}
+
+///|
+fn validate_ascii_value(
+  input : StringView,
+  context : String,
+) -> Result[String, MoonLoomError] {
+  if input.length() == 0 || input.length() > 255 {
+    return Err(InvalidProtocolValue(context))
+  }
+  for code_unit in input.code_units() {
+    let code = code_unit.to_int()
+    let valid = (code >= 48 && code <= 57) ||
+      (code >= 65 && code <= 90) ||
+      (code >= 97 && code <= 122) ||
+      code == 45 ||
+      code == 46 ||
+      code == 95
+    if !valid {
+      return Err(InvalidProtocolValue(context))
+    }
+  }
+  Ok(input.to_owned())
+}
+
+///|
+fn parse_protocol_value(
+  protocol : Protocol,
+  input : StringView,
+) -> Result[ProtocolValue, MoonLoomError] {
+  match protocol {
+    Ip4 =>
+      match parse_ipv4_text(input) {
+        Ok(value) => Ok(ProtocolValue::Ipv4(value))
+        Err(err) => Err(err)
+      }
+    Ip6 =>
+      match parse_ipv6_text(input) {
+        Ok(value) => Ok(ProtocolValue::Ipv6(value))
+        Err(err) => Err(err)
+      }
+    Dns | Dns4 | Dns6 | Dnsaddr =>
+      match validate_ascii_value(input, protocol.diagnostic_name()) {
+        Ok(value) => Ok(ProtocolValue::Domain(value))
+        Err(err) => Err(err)
+      }
+    Tcp | Udp =>
+      match parse_decimal_bounded(input, 65535) {
+        Some(value) => Ok(ProtocolValue::Port(value))
+        None => Err(InvalidProtocolValue(protocol.diagnostic_name()))
+      }
+    P2p =>
+      match validate_ascii_value(input, "p2p") {
+        Ok(value) => Ok(ProtocolValue::PeerId(value))
+        Err(err) => Err(err)
+      }
+    Unknown(_) => Ok(ProtocolValue::Text(input.to_owned()))
+    Http | Https | Ws | Wss =>
+      Err(InvalidProtocolValue(protocol.diagnostic_name()))
+  }
+}
+
+///|
+pub fn Multiaddr::parse(
+  text : StringView,
+  limits : Limits,
+) -> Result[Multiaddr, MoonLoomError] {
+  match limits.check_multiaddr(text.length()) {
+    Ok(_) => ()
+    Err(err) => return Err(err)
+  }
+  if text.length() == 0 {
+    return Ok(Multiaddr::empty())
+  }
+  let parts : Array[StringView] = []
+  for part in text.split("/") {
+    parts.push(part)
+  }
+  if parts.length() == 0 || parts[0].length() != 0 {
+    return Err(InvalidField("multiaddr prefix", 0))
+  }
+  if parts.length() == 1 {
+    return Ok(Multiaddr::empty())
+  }
+  let segments : Array[PathSegment] = []
+  let mut index = 1
+  while index < parts.length() {
+    if parts[index].length() == 0 {
+      return Err(InvalidField("multiaddr protocol", index))
+    }
+    let protocol = match Protocol::from_name(parts[index]) {
+      Some(value) => value
+      None => return Err(UnknownProtocol(parts[index].to_owned()))
+    }
+    index += 1
+    let value = if protocol.expected_value_kind() == Empty {
+      ProtocolValue::Empty
+    } else {
+      if index >= parts.length() || parts[index].length() == 0 {
+        return Err(Truncated("multiaddr value", index))
+      }
+      let parsed = match parse_protocol_value(protocol, parts[index]) {
+        Ok(value) => value
+        Err(err) => return Err(err)
+      }
+      index += 1
+      parsed
+    }
+    let segment = match PathSegment::new(protocol, value) {
+      Ok(value) => value
+      Err(err) => return Err(err)
+    }
+    segments.push(segment)
+  }
+  Multiaddr::from_segments(segments, limits)
+}
+
+///|
 pub extend Protocol with Eq::{not_equal, equal}
 
 ///|

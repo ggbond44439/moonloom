@@ -24,6 +24,7 @@ pub(all) enum MoonLoomError {
   InvalidCodec(UInt64)
   InvalidProtocolValue(String)
   InvalidPort(Int)
+  UnknownProtocol(String)
 } derive(Eq, @debug.Debug)
 
 ///|
@@ -77,6 +78,8 @@ pub impl Show for MoonLoomError with fn output(self, logger) {
     InvalidProtocolValue(protocol) =>
       logger.write_string("moonloom: invalid value for protocol \{protocol}")
     InvalidPort(port) => logger.write_string("moonloom: invalid port \{port}")
+    UnknownProtocol(name) =>
+      logger.write_string("moonloom: unknown protocol '\{name}'")
   }
 }
 

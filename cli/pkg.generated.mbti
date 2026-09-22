@@ -14,12 +14,18 @@ pub fn parse_invocation(ArrayView[String]) -> Result[CliInvocation, CliError]
 
 pub fn run(ArrayView[String]) -> CliResult
 
+pub fn run_multibase(CliInvocation) -> CliResult
+
+pub fn run_multihash(CliInvocation) -> CliResult
+
 // Errors
 
 // Types and methods
 pub(all) enum CliError {
   UnknownCommand(String)
   UnknownOption(String)
+  MissingArgument(String)
+  InvalidValue(String, String)
 } derive(Eq, @debug.Debug)
 pub fn CliError::equal(Self, Self) -> Bool
 pub fn CliError::not_equal(Self, Self) -> Bool
@@ -44,7 +50,9 @@ pub(all) struct CliResult {
   stderr : String
 } derive(Eq, @debug.Debug)
 pub fn CliResult::equal(Self, Self) -> Bool
+pub fn CliResult::failure(Int, String) -> Self
 pub fn CliResult::not_equal(Self, Self) -> Bool
+pub fn CliResult::success(String) -> Self
 pub fn CliResult::to_repr(Self) -> @debug.Repr
 
 pub(all) enum TopLevelCommand {

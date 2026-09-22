@@ -35,6 +35,8 @@ pub(all) struct CliInvocation {
 pub(all) enum CliError {
   UnknownCommand(String)
   UnknownOption(String)
+  MissingArgument(String)
+  InvalidValue(String, String)
 } derive(Eq, @debug.Debug)
 
 ///|
@@ -42,6 +44,10 @@ pub impl Show for CliError with fn output(self, logger) {
   match self {
     UnknownCommand(name) => logger.write_string("unknown command '\{name}'")
     UnknownOption(name) => logger.write_string("unknown option '\{name}'")
+    MissingArgument(name) =>
+      logger.write_string("missing argument for '\{name}'")
+    InvalidValue(name, value) =>
+      logger.write_string("invalid value '\{value}' for '\{name}'")
   }
 }
 
@@ -51,6 +57,16 @@ pub(all) struct CliResult {
   stdout : String
   stderr : String
 } derive(Eq, @debug.Debug)
+
+///|
+pub fn CliResult::success(stdout : String) -> CliResult {
+  { exit_code: 0, stdout, stderr: "", }
+}
+
+///|
+pub fn CliResult::failure(code : Int, stderr : String) -> CliResult {
+  { exit_code: code, stdout: "", stderr, }
+}
 
 ///|
 pub fn help_text() -> String {
@@ -81,15 +97,17 @@ pub fn parse_invocation(
   let positional : Array[String] = []
   let mut json = false
   let mut help = false
+  let mut command_seen = false
   for arg in args {
     match arg {
       "--json" => json = true
       "--help" | "-h" => help = true
       _ =>
-        if arg.has_prefix("-") {
+        if arg.has_prefix("-") && !command_seen {
           return Err(UnknownOption(arg))
         } else {
           positional.push(arg)
+          command_seen = true
         }
     }
   }
@@ -118,28 +136,26 @@ pub fn run(args : ArrayView[String]) -> CliResult {
   let invocation = match parse_invocation(args) {
     Ok(value) => value
     Err(err) =>
-      return {
-        exit_code: 2,
-        stdout: "",
-        stderr: "moonloom: \{err.to_string()}\n\n" + help_text(),
-      }
+      return CliResult::failure(
+        2,
+        "moonloom: \{err.to_string()}\n\n" + help_text(),
+      )
   }
   match invocation.command {
-    Help => { exit_code: 0, stdout: help_text(), stderr: "", }
-    Version => { exit_code: 0, stdout: "moonloom " + CLI_VERSION, stderr: "", }
-    _ =>
+    Help => CliResult::success(help_text())
+    Version => CliResult::success("moonloom " + CLI_VERSION)
+    Multibase => run_multibase(invocation)
+    Multihash => run_multihash(invocation)
+    Cid | Multiaddr =>
       if invocation.help {
-        {
-          exit_code: 0,
-          stdout: "moonloom \{invocation.command.name()}: command help will be added in the next CLI stage.",
-          stderr: "",
-        }
+        CliResult::success(
+          "moonloom \{invocation.command.name()}: command help will be added in the next CLI stage.",
+        )
       } else {
-        {
-          exit_code: 3,
-          stdout: "",
-          stderr: "moonloom: command '\{invocation.command.name()}' is not implemented yet",
-        }
+        CliResult::failure(
+          3,
+          "moonloom: command '\{invocation.command.name()}' is not implemented yet",
+        )
       }
   }
 }

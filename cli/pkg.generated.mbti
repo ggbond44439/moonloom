@@ -1,0 +1,65 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "ggbond44439/moonloom/cli"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub const CLI_VERSION : String = "0.1.0"
+
+pub fn help_text() -> String
+
+pub fn parse_invocation(ArrayView[String]) -> Result[CliInvocation, CliError]
+
+pub fn run(ArrayView[String]) -> CliResult
+
+// Errors
+
+// Types and methods
+pub(all) enum CliError {
+  UnknownCommand(String)
+  UnknownOption(String)
+} derive(Eq, @debug.Debug)
+pub fn CliError::equal(Self, Self) -> Bool
+pub fn CliError::not_equal(Self, Self) -> Bool
+pub fn CliError::output(Self, &Logger) -> Unit
+pub fn CliError::to_repr(Self) -> @debug.Repr
+pub fn CliError::to_string(Self) -> String
+pub impl Show for CliError
+
+pub(all) struct CliInvocation {
+  command : TopLevelCommand
+  args : Array[String]
+  json : Bool
+  help : Bool
+} derive(Eq, @debug.Debug)
+pub fn CliInvocation::equal(Self, Self) -> Bool
+pub fn CliInvocation::not_equal(Self, Self) -> Bool
+pub fn CliInvocation::to_repr(Self) -> @debug.Repr
+
+pub(all) struct CliResult {
+  exit_code : Int
+  stdout : String
+  stderr : String
+} derive(Eq, @debug.Debug)
+pub fn CliResult::equal(Self, Self) -> Bool
+pub fn CliResult::not_equal(Self, Self) -> Bool
+pub fn CliResult::to_repr(Self) -> @debug.Repr
+
+pub(all) enum TopLevelCommand {
+  Help
+  Version
+  Multibase
+  Multihash
+  Cid
+  Multiaddr
+} derive(Eq, @debug.Debug)
+pub fn TopLevelCommand::equal(Self, Self) -> Bool
+pub fn TopLevelCommand::name(Self) -> String
+pub fn TopLevelCommand::not_equal(Self, Self) -> Bool
+pub fn TopLevelCommand::to_repr(Self) -> @debug.Repr
+
+// Type aliases
+
+// Traits

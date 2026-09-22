@@ -1,5 +1,6 @@
-// import {
-//   "moonloom/moonloom" @lib,
-// }
+import {
+  "ggbond44439/moonloom/cli",
+  "moonbitlang/core/env",
+}
 
 pkgtype(kind: "executable")

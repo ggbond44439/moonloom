@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Added canonical Multiaddr text output with RFC 5952 IPv6 compression.
 - Added Multiaddr binary encoding and decoding with known-vector tests.
 - Added strict Multiaddr text parsing for IPv4, IPv6, DNS, TCP, UDP, p2p, and
   unit-valued web protocols.

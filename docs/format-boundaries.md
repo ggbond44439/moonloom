@@ -142,6 +142,16 @@ Text parsing rules:
 - IPv4 parsing is strict dotted decimal.
 - IPv6 parsing supports `::` compression and rejects ambiguous compression.
 - DNS and peer strings are currently ASCII-only and bounded to 255 code units.
+Canonical text:
+
+- IPv4 uses dotted decimal without leading zeroes.
+- IPv6 uses lowercase hexadecimal and RFC 5952 zero compression.
+- The longest zero run is compressed; ties prefer the first run.
+- Single zero groups are not compressed.
+- Ports are decimal.
+- Empty Multiaddr text is the empty string.
+- Unknown protocols cannot be rendered because they have no canonical name.
+
 Binary format:
 
 - Protocol identifiers use unsigned varints from the shared protocol registry.

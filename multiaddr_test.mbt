@@ -300,3 +300,75 @@ test "Multiaddr unit protocols and peer IDs are typed" {
     None => fail("missing peer segment")
   }
 }
+
+///|
+test "Multiaddr binary codec matches known vectors" {
+  let limits = @moonloom.Limits::default()
+  let ipv4 = match
+    @moonloom.Multiaddr::parse("/ip4/127.0.0.1/tcp/8080", limits) {
+    Ok(value) => value
+    Err(err) => fail(err.to_string())
+  }
+  assert_eq(ipv4.to_bytes(limits), Ok(b"\x04\x7f\x00\x00\x01\x06\x1f\x90"))
+  let ipv6 = match @moonloom.Multiaddr::parse("/ip6/::1/udp/53", limits) {
+    Ok(value) => value
+    Err(err) => fail(err.to_string())
+  }
+  assert_eq(
+    ipv6.to_bytes(limits),
+    Ok(
+      b"\x29\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x91\x02\x00\x35",
+    ),
+  )
+  let dns = match
+    @moonloom.Multiaddr::parse("/dns/example.com/tcp/443", limits) {
+    Ok(value) => value
+    Err(err) => fail(err.to_string())
+  }
+  assert_eq(dns.to_bytes(limits), Ok(b"\x35\x0bexample.com\x06\x01\xbb"))
+  let http = match @moonloom.Multiaddr::parse("/http", limits) {
+    Ok(value) => value
+    Err(err) => fail(err.to_string())
+  }
+  assert_eq(http.to_bytes(limits), Ok(b"\xe0\x03"))
+}
+
+///|
+test "Multiaddr binary round trip preserves typed values" {
+  let limits = @moonloom.Limits::default()
+  let values = [
+    "/ip4/127.0.0.1/tcp/8080", "/ip6/2001:db8::1/udp/53", "/dns4/example.com/tcp/443/https",
+    "/p2p/QmdfTbBqBPQ7VNxZEYEj14VmRuZBkqFbiwReogJgS1zR1n", "/ws",
+  ]
+  for text in values {
+    let original = match @moonloom.Multiaddr::parse(text, limits) {
+      Ok(value) => value
+      Err(err) => fail(text + ": " + err.to_string())
+    }
+    let bytes = match original.to_bytes(limits) {
+      Ok(value) => value
+      Err(err) => fail(text + ": " + err.to_string())
+    }
+    match @moonloom.Multiaddr::parse_bytes(bytes, limits) {
+      Ok(decoded) => assert_eq(decoded, original)
+      Err(err) => fail(text + ": " + err.to_string())
+    }
+  }
+}
+
+///|
+test "Multiaddr binary parser rejects truncation and unknown codes" {
+  let limits = @moonloom.Limits::default()
+  assert_eq(
+    @moonloom.Multiaddr::parse_bytes(b"\x04\x7f", limits),
+    Err(@moonloom.Truncated("ip4", 1)),
+  )
+  assert_eq(
+    @moonloom.Multiaddr::parse_bytes(b"\x35\x0bexample", limits),
+    Err(@moonloom.Truncated("dns", 2)),
+  )
+  assert_eq(
+    @moonloom.Multiaddr::parse_bytes(b"\x9f\x7f", limits),
+    Err(@moonloom.UnknownProtocol("protocol-16287")),
+  )
+}

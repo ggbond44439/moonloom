@@ -218,8 +218,10 @@ pub fn Multiaddr::is_empty(Self) -> Bool
 pub fn Multiaddr::length(Self) -> Int
 pub fn Multiaddr::not_equal(Self, Self) -> Bool
 pub fn Multiaddr::parse(StringView, Limits) -> Result[Self, MoonLoomError]
+pub fn Multiaddr::parse_bytes(BytesView, Limits) -> Result[Self, MoonLoomError]
 pub fn Multiaddr::push(Self, PathSegment, Limits) -> Result[Self, MoonLoomError]
 pub fn Multiaddr::segments(Self) -> ArrayView[PathSegment]
+pub fn Multiaddr::to_bytes(Self, Limits) -> Result[Bytes, MoonLoomError]
 pub fn Multiaddr::to_repr(Self) -> @debug.Repr
 
 pub(all) struct Multihash {

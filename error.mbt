@@ -22,6 +22,8 @@ pub(all) enum MoonLoomError {
   InvalidCid(String, Int)
   CidCodecMismatch(UInt64)
   InvalidCodec(UInt64)
+  InvalidProtocolValue(String)
+  InvalidPort(Int)
 } derive(Eq, @debug.Debug)
 
 ///|
@@ -72,6 +74,9 @@ pub impl Show for MoonLoomError with fn output(self, logger) {
     CidCodecMismatch(code) =>
       logger.write_string("moonloom: CID codec \{code} cannot use CIDv0")
     InvalidCodec(code) => logger.write_string("moonloom: invalid codec \{code}")
+    InvalidProtocolValue(protocol) =>
+      logger.write_string("moonloom: invalid value for protocol \{protocol}")
+    InvalidPort(port) => logger.write_string("moonloom: invalid port \{port}")
   }
 }
 

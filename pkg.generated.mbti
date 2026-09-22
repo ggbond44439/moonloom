@@ -134,6 +134,25 @@ pub struct HashProvider {
 pub fn HashProvider::hash(Self, HashAlgorithm, BytesView) -> Result[Bytes, MoonLoomError]
 pub fn HashProvider::new((HashAlgorithm, BytesView) -> Result[Bytes, MoonLoomError]) -> Self
 
+pub struct Ipv4Address {
+  octets : Bytes
+} derive(Eq, @debug.Debug)
+pub fn Ipv4Address::equal(Self, Self) -> Bool
+pub fn Ipv4Address::from_octets(BytesView) -> Result[Self, MoonLoomError]
+pub fn Ipv4Address::new(Int, Int, Int, Int) -> Result[Self, MoonLoomError]
+pub fn Ipv4Address::not_equal(Self, Self) -> Bool
+pub fn Ipv4Address::octets(Self) -> BytesView
+pub fn Ipv4Address::to_repr(Self) -> @debug.Repr
+
+pub struct Ipv6Address {
+  octets : Bytes
+} derive(Eq, @debug.Debug)
+pub fn Ipv6Address::equal(Self, Self) -> Bool
+pub fn Ipv6Address::from_octets(BytesView) -> Result[Self, MoonLoomError]
+pub fn Ipv6Address::not_equal(Self, Self) -> Bool
+pub fn Ipv6Address::octets(Self) -> BytesView
+pub fn Ipv6Address::to_repr(Self) -> @debug.Repr
+
 pub struct Limits {
   max_input_bytes : Int
   max_varint_bytes : Int
@@ -169,6 +188,8 @@ pub(all) enum MoonLoomError {
   InvalidCid(String, Int)
   CidCodecMismatch(UInt64)
   InvalidCodec(UInt64)
+  InvalidProtocolValue(String)
+  InvalidPort(Int)
 } derive(Eq, @debug.Debug)
 pub fn MoonLoomError::equal(Self, Self) -> Bool
 pub fn MoonLoomError::not_equal(Self, Self) -> Bool
@@ -176,6 +197,20 @@ pub fn MoonLoomError::output(Self, &Logger) -> Unit
 pub fn MoonLoomError::to_repr(Self) -> @debug.Repr
 pub fn MoonLoomError::to_string(Self) -> String
 pub impl Show for MoonLoomError
+
+pub struct Multiaddr {
+  segments : Array[PathSegment]
+} derive(Eq, @debug.Debug)
+pub fn Multiaddr::empty() -> Self
+pub fn Multiaddr::equal(Self, Self) -> Bool
+pub fn Multiaddr::from_segments(Array[PathSegment], Limits) -> Result[Self, MoonLoomError]
+pub fn Multiaddr::get(Self, Int) -> PathSegment?
+pub fn Multiaddr::is_empty(Self) -> Bool
+pub fn Multiaddr::length(Self) -> Int
+pub fn Multiaddr::not_equal(Self, Self) -> Bool
+pub fn Multiaddr::push(Self, PathSegment, Limits) -> Result[Self, MoonLoomError]
+pub fn Multiaddr::segments(Self) -> ArrayView[PathSegment]
+pub fn Multiaddr::to_repr(Self) -> @debug.Repr
 
 pub(all) struct Multihash {
   code : UInt64
@@ -194,6 +229,72 @@ pub fn Multihash::to_repr(Self) -> @debug.Repr
 pub fn Multihash::to_text(Self, Base) -> Result[String, MoonLoomError]
 pub fn Multihash::to_text_canonical(Self) -> Result[String, MoonLoomError]
 pub fn Multihash::verify(Self, BytesView, HashProvider, Limits) -> Result[Unit, MoonLoomError]
+
+pub struct PathSegment {
+  protocol : Protocol
+  value : ProtocolValue
+} derive(Eq, @debug.Debug)
+pub fn PathSegment::equal(Self, Self) -> Bool
+pub fn PathSegment::new(Protocol, ProtocolValue) -> Result[Self, MoonLoomError]
+pub fn PathSegment::not_equal(Self, Self) -> Bool
+pub fn PathSegment::protocol(Self) -> Protocol
+pub fn PathSegment::to_repr(Self) -> @debug.Repr
+pub fn PathSegment::value(Self) -> ProtocolValue
+
+pub(all) enum Protocol {
+  Ip4
+  Ip6
+  Dns
+  Dns4
+  Dns6
+  Dnsaddr
+  Tcp
+  Udp
+  P2p
+  Http
+  Https
+  Ws
+  Wss
+  Unknown(UInt64)
+} derive(Eq, @debug.Debug)
+pub fn Protocol::accepts_value(Self, ProtocolValue) -> Bool
+pub fn Protocol::code(Self) -> UInt64
+pub fn Protocol::diagnostic_name(Self) -> String
+pub fn Protocol::equal(Self, Self) -> Bool
+pub fn Protocol::expected_value_kind(Self) -> ProtocolValueKind
+pub fn Protocol::from_code(UInt64) -> Self
+pub fn Protocol::from_name(StringView) -> Self?
+pub fn Protocol::name(Self) -> String?
+pub fn Protocol::not_equal(Self, Self) -> Bool
+pub fn Protocol::to_repr(Self) -> @debug.Repr
+
+pub(all) enum ProtocolValue {
+  Empty
+  Ipv4(Ipv4Address)
+  Ipv6(Ipv6Address)
+  Domain(String)
+  Port(Int)
+  PeerId(String)
+  Text(String)
+  Raw(Bytes)
+} derive(Eq, @debug.Debug)
+pub fn ProtocolValue::equal(Self, Self) -> Bool
+pub fn ProtocolValue::not_equal(Self, Self) -> Bool
+pub fn ProtocolValue::to_repr(Self) -> @debug.Repr
+
+pub(all) enum ProtocolValueKind {
+  Empty
+  Ipv4
+  Ipv6
+  Domain
+  Port
+  PeerId
+  Text
+  Raw
+} derive(Eq, @debug.Debug)
+pub fn ProtocolValueKind::equal(Self, Self) -> Bool
+pub fn ProtocolValueKind::not_equal(Self, Self) -> Bool
+pub fn ProtocolValueKind::to_repr(Self) -> @debug.Repr
 
 // Type aliases
 

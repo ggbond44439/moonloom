@@ -32,6 +32,8 @@ The format core is implemented and tested:
   version, global `--json`, and deterministic exit codes.
 - Multibase and Multihash CLI commands for encoding, digesting, inspection, and
   verification.
+- CID CLI commands for CIDv0/CIDv1 creation, inspection, and content
+  verification.
 - Typed errors with byte offsets and configurable resource limits.
 - Reusable bounded `WireReader` and `WireWriter` primitives shared by all
   Multiformats codecs.

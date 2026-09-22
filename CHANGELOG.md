@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Added CID CLI commands for encoding, decoding, and verification.
 - Added Multibase and Multihash CLI commands with JSON output.
 - Added the reusable CLI parsing and result layer.
 - Added process entry-point wiring for help and version commands.

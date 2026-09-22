@@ -15,10 +15,14 @@ moonloom multibase decode <multibase-text>
 moonloom multihash digest [--algorithm sha2-256|sha2-512] <text>
 moonloom multihash inspect <multibase-multihash>
 moonloom multihash verify <multibase-multihash> <text>
+
+moonloom cid encode [--version 0|1] [--codec <name>] [--algorithm <name>] <text>
+moonloom cid decode <cid>
+moonloom cid verify <cid> <text>
 ```
 
-CID and Multiaddr command names are reserved and are implemented in the next
-CLI stages.
+Multiaddr command names are reserved and are implemented in the next CLI
+stage.
 
 ## Global options
 

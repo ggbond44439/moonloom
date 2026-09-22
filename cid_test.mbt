@@ -115,7 +115,7 @@ test "CID constructors enforce version-specific rules" {
   }
   assert_eq(
     @moonloom.Cid::v1(0UL, hash, @moonloom.Limits::default()),
-    Err(@moonloom.CidCodecMismatch(0UL)),
+    Err(@moonloom.InvalidCodec(0UL)),
   )
   assert_eq(
     @moonloom.Cid::v0(hash, @moonloom.Limits::default()),

@@ -1,4 +1,7 @@
 ///|
+pub const CID_VERSION_0 : UInt64 = 0UL
+
+///|
 pub const CID_VERSION_1 : UInt64 = 1UL
 
 ///|
@@ -19,12 +22,17 @@ pub fn Cid::v1(
   limits : Limits,
 ) -> Result[Cid, MoonLoomError] {
   if codec == 0UL {
-    return Err(CidCodecMismatch(codec))
+    return Err(InvalidCodec(codec))
   }
-  match hash.encode().length() > limits.max_input_bytes() {
-    true =>
-      Err(InputTooLong("CID", limits.max_input_bytes(), hash.encode().length()))
-    false => Ok({ version: CID_VERSION_1, codec, hash, })
+  let encoded_hash = hash.encode()
+  let version = encode_u64(CID_VERSION_1)
+  let encoded_codec = encode_u64(codec)
+  let total_length = version.length() +
+    encoded_codec.length() +
+    encoded_hash.length()
+  match limits.check_input("CID", total_length) {
+    Ok(_) => Ok({ version: CID_VERSION_1, codec, hash, })
+    Err(err) => Err(err)
   }
 }
 
@@ -33,10 +41,9 @@ pub fn Cid::v0(hash : Multihash, limits : Limits) -> Result[Cid, MoonLoomError] 
   match hash.algorithm() {
     Some(Sha2_256) => {
       let bytes = hash.encode()
-      if bytes.length() > limits.max_input_bytes() {
-        Err(InputTooLong("CID", limits.max_input_bytes(), bytes.length()))
-      } else {
-        Ok({ version: 0UL, codec: DAG_PB_CODEC, hash, })
+      match limits.check_input("CID", bytes.length()) {
+        Ok(_) => Ok({ version: CID_VERSION_0, codec: DAG_PB_CODEC, hash, })
+        Err(err) => Err(err)
       }
     }
     _ => Err(UnsupportedHashAlgorithm("CIDv0 requires sha2-256"))
@@ -68,9 +75,27 @@ pub fn Cid::to_bytes(self : Cid) -> Bytes {
 }
 
 ///|
+pub fn Cid::is_v0(self : Cid) -> Bool {
+  self.version == CID_VERSION_0
+}
+
+///|
+pub fn Cid::codec_name(self : Cid) -> String? {
+  multicodec_name(self.codec)
+}
+
+///|
+pub fn Cid::hash_algorithm(self : Cid) -> HashAlgorithm? {
+  self.hash.algorithm()
+}
+
+///|
 fn decode_v1(input : BytesView, limits : Limits) -> Result[Cid, MoonLoomError] {
   match decode_u64_with_limits(input, limits) {
     Ok((codec, codec_length)) => {
+      if codec == 0UL {
+        return Err(InvalidCodec(codec))
+      }
       if codec_length >= input.length() {
         return Err(Truncated("CID codec", codec_length))
       }

@@ -61,3 +61,34 @@ pub fn Limits::check_input(
     Ok(())
   }
 }
+
+///|
+/// Validate a digest length before allocation or decoding.
+pub fn Limits::check_digest(
+  self : Limits,
+  context : String,
+  length : Int,
+) -> Result[Unit, MoonLoomError] {
+  if length < 0 {
+    Err(OffsetOutOfBounds(length))
+  } else if length > self.max_digest_bytes {
+    Err(InputTooLong(context, self.max_digest_bytes, length))
+  } else {
+    Ok(())
+  }
+}
+
+///|
+/// Validate a Multiaddr byte length before allocation or decoding.
+pub fn Limits::check_multiaddr(
+  self : Limits,
+  length : Int,
+) -> Result[Unit, MoonLoomError] {
+  if length < 0 {
+    Err(OffsetOutOfBounds(length))
+  } else if length > self.max_multiaddr_bytes {
+    Err(InputTooLong("multiaddr", self.max_multiaddr_bytes, length))
+  } else {
+    Ok(())
+  }
+}

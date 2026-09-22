@@ -35,6 +35,21 @@ pub fn HashAlgorithm::from_code(code : UInt64) -> HashAlgorithm? {
 }
 
 ///|
+pub fn HashAlgorithm::from_name(name : StringView) -> HashAlgorithm? {
+  match name.to_owned() {
+    "identity" => Some(Identity)
+    "sha2-256" => Some(Sha2_256)
+    "sha2-512" => Some(Sha2_512)
+    _ => None
+  }
+}
+
+///|
+pub fn supported_hash_algorithms() -> Array[HashAlgorithm] {
+  [Identity, Sha2_256, Sha2_512]
+}
+
+///|
 pub fn HashAlgorithm::expected_digest_size(self : HashAlgorithm) -> Int? {
   match self {
     Identity => None
@@ -120,6 +135,11 @@ pub fn Multihash::identity(
 }
 
 ///|
+pub fn Multihash::is_identity(self : Multihash) -> Bool {
+  self.code == 0UL
+}
+
+///|
 pub fn Multihash::algorithm(self : Multihash) -> HashAlgorithm? {
   HashAlgorithm::from_code(self.code)
 }
@@ -192,6 +212,13 @@ pub fn Multihash::to_text(
   base : Base,
 ) -> Result[String, MoonLoomError] {
   multibase_encode(base, self.encode())
+}
+
+///|
+pub fn Multihash::to_text_canonical(
+  self : Multihash,
+) -> Result[String, MoonLoomError] {
+  self.to_text(Base58Btc)
 }
 
 ///|

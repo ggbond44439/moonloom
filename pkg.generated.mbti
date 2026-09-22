@@ -6,9 +6,13 @@ import {
 }
 
 // Values
+pub const CID_VERSION_0 : UInt64 = 0
+
 pub const CID_VERSION_1 : UInt64 = 1
 
 pub const DAG_PB_CODEC : UInt64 = 112
+
+pub const RAW_CODEC : UInt64 = 85
 
 pub fn cid_from_content(UInt64, HashAlgorithm, BytesView, HashProvider, Limits) -> Result[Cid, MoonLoomError]
 
@@ -34,6 +38,10 @@ pub fn multicodec_name(UInt64) -> String?
 
 pub fn sha2_provider() -> HashProvider
 
+pub fn supported_bases() -> Array[Base]
+
+pub fn supported_hash_algorithms() -> Array[HashAlgorithm]
+
 // Errors
 
 // Types and methods
@@ -51,7 +59,9 @@ pub(all) enum Base {
   Base64UrlPad
 } derive(Eq, @debug.Debug)
 pub fn Base::equal(Self, Self) -> Bool
+pub fn Base::from_name(StringView) -> Self?
 pub fn Base::from_prefix(Char) -> Self?
+pub fn Base::name(Self) -> String
 pub fn Base::not_equal(Self, Self) -> Bool
 pub fn Base::prefix(Self) -> Char
 pub fn Base::to_repr(Self) -> @debug.Repr
@@ -61,8 +71,11 @@ pub(all) struct Cid {
   codec : UInt64
   hash : Multihash
 } derive(Eq, @debug.Debug)
+pub fn Cid::codec_name(Self) -> String?
 pub fn Cid::decode_bytes(BytesView, Limits) -> Result[Self, MoonLoomError]
 pub fn Cid::equal(Self, Self) -> Bool
+pub fn Cid::hash_algorithm(Self) -> HashAlgorithm?
+pub fn Cid::is_v0(Self) -> Bool
 pub fn Cid::not_equal(Self, Self) -> Bool
 pub fn Cid::parse(StringView, Limits) -> Result[Self, MoonLoomError]
 pub fn Cid::to_bytes(Self) -> Bytes
@@ -79,6 +92,8 @@ pub(all) enum CodecCategory {
   Multiaddr
 } derive(Eq, @debug.Debug)
 pub fn CodecCategory::equal(Self, Self) -> Bool
+pub fn CodecCategory::from_name(StringView) -> Self?
+pub fn CodecCategory::name(Self) -> String
 pub fn CodecCategory::not_equal(Self, Self) -> Bool
 pub fn CodecCategory::to_repr(Self) -> @debug.Repr
 
@@ -108,6 +123,7 @@ pub fn HashAlgorithm::code(Self) -> UInt64
 pub fn HashAlgorithm::equal(Self, Self) -> Bool
 pub fn HashAlgorithm::expected_digest_size(Self) -> Int?
 pub fn HashAlgorithm::from_code(UInt64) -> Self?
+pub fn HashAlgorithm::from_name(StringView) -> Self?
 pub fn HashAlgorithm::name(Self) -> String
 pub fn HashAlgorithm::not_equal(Self, Self) -> Bool
 pub fn HashAlgorithm::to_repr(Self) -> @debug.Repr
@@ -124,7 +140,9 @@ pub struct Limits {
   max_digest_bytes : Int
   max_multiaddr_bytes : Int
 }
+pub fn Limits::check_digest(Self, String, Int) -> Result[Unit, MoonLoomError]
 pub fn Limits::check_input(Self, String, Int) -> Result[Unit, MoonLoomError]
+pub fn Limits::check_multiaddr(Self, Int) -> Result[Unit, MoonLoomError]
 pub fn Limits::default() -> Self
 pub fn Limits::max_digest_bytes(Self) -> Int
 pub fn Limits::max_input_bytes(Self) -> Int
@@ -150,6 +168,7 @@ pub(all) enum MoonLoomError {
   InvalidMultihash(String, Int)
   InvalidCid(String, Int)
   CidCodecMismatch(UInt64)
+  InvalidCodec(UInt64)
 } derive(Eq, @debug.Debug)
 pub fn MoonLoomError::equal(Self, Self) -> Bool
 pub fn MoonLoomError::not_equal(Self, Self) -> Bool
@@ -169,9 +188,11 @@ pub fn Multihash::encode(Self) -> Bytes
 pub fn Multihash::equal(Self, Self) -> Bool
 pub fn Multihash::from_text(StringView, Limits) -> Result[Self, MoonLoomError]
 pub fn Multihash::identity(BytesView, Limits) -> Result[Self, MoonLoomError]
+pub fn Multihash::is_identity(Self) -> Bool
 pub fn Multihash::not_equal(Self, Self) -> Bool
 pub fn Multihash::to_repr(Self) -> @debug.Repr
 pub fn Multihash::to_text(Self, Base) -> Result[String, MoonLoomError]
+pub fn Multihash::to_text_canonical(Self) -> Result[String, MoonLoomError]
 pub fn Multihash::verify(Self, BytesView, HashProvider, Limits) -> Result[Unit, MoonLoomError]
 
 // Type aliases

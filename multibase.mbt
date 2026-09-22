@@ -448,6 +448,58 @@ pub fn multibase_decode(
 }
 
 ///|
+pub fn Base::name(self : Base) -> String {
+  match self {
+    Base16 => "base16"
+    Base16Upper => "base16upper"
+    Base32 => "base32"
+    Base32Upper => "base32upper"
+    Base32Pad => "base32pad"
+    Base32PadUpper => "base32padupper"
+    Base58Btc => "base58btc"
+    Base64 => "base64"
+    Base64Pad => "base64pad"
+    Base64Url => "base64url"
+    Base64UrlPad => "base64urlpad"
+  }
+}
+
+///|
+pub fn Base::from_name(name : StringView) -> Base? {
+  match name.to_owned() {
+    "base16" => Some(Base16)
+    "base16upper" => Some(Base16Upper)
+    "base32" => Some(Base32)
+    "base32upper" => Some(Base32Upper)
+    "base32pad" => Some(Base32Pad)
+    "base32padupper" => Some(Base32PadUpper)
+    "base58btc" => Some(Base58Btc)
+    "base64" => Some(Base64)
+    "base64pad" => Some(Base64Pad)
+    "base64url" => Some(Base64Url)
+    "base64urlpad" => Some(Base64UrlPad)
+    _ => None
+  }
+}
+
+///|
+pub fn supported_bases() -> Array[Base] {
+  [
+    Base16,
+    Base16Upper,
+    Base32,
+    Base32Upper,
+    Base32Pad,
+    Base32PadUpper,
+    Base58Btc,
+    Base64,
+    Base64Pad,
+    Base64Url,
+    Base64UrlPad,
+  ]
+}
+
+///|
 pub extend Base with Eq::{not_equal, equal}
 
 ///|

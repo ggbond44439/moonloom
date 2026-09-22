@@ -8,6 +8,10 @@ pub(all) enum CodecCategory {
 } derive(Eq, @debug.Debug)
 
 ///|
+/// Common codec identifier for raw bytes.
+pub const RAW_CODEC : UInt64 = 85UL
+
+///|
 /// One curated entry from the multicodec registry.
 pub(all) struct CodecInfo {
   code : UInt64
@@ -81,6 +85,27 @@ pub fn multicodec_code(name : StringView) -> UInt64? {
 ///|
 pub fn multicodec_count() -> Int {
   codec_table().length()
+}
+
+///|
+pub fn CodecCategory::name(self : CodecCategory) -> String {
+  match self {
+    Cid => "cid"
+    Format => "format"
+    Hash => "hash"
+    Multiaddr => "multiaddr"
+  }
+}
+
+///|
+pub fn CodecCategory::from_name(name : StringView) -> CodecCategory? {
+  match name.to_owned() {
+    "cid" => Some(Cid)
+    "format" => Some(Format)
+    "hash" => Some(Hash)
+    "multiaddr" => Some(Multiaddr)
+    _ => None
+  }
 }
 
 ///|

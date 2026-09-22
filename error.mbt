@@ -21,6 +21,7 @@ pub(all) enum MoonLoomError {
   InvalidMultihash(String, Int)
   InvalidCid(String, Int)
   CidCodecMismatch(UInt64)
+  InvalidCodec(UInt64)
 } derive(Eq, @debug.Debug)
 
 ///|
@@ -70,6 +71,7 @@ pub impl Show for MoonLoomError with fn output(self, logger) {
       logger.write_string("moonloom: invalid CID \{context} at byte \{offset}")
     CidCodecMismatch(code) =>
       logger.write_string("moonloom: CID codec \{code} cannot use CIDv0")
+    InvalidCodec(code) => logger.write_string("moonloom: invalid codec \{code}")
   }
 }
 

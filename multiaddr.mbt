@@ -31,108 +31,56 @@ pub(all) enum ProtocolValueKind {
 
 ///|
 pub fn Protocol::code(self : Protocol) -> UInt64 {
-  match self {
-    Ip4 => 4UL
-    Ip6 => 41UL
-    Dns => 53UL
-    Dns4 => 54UL
-    Dns6 => 55UL
-    Dnsaddr => 56UL
-    Tcp => 6UL
-    Udp => 273UL
-    P2p => 421UL
-    Http => 480UL
-    Https => 443UL
-    Ws => 477UL
-    Wss => 478UL
-    Unknown(code) => code
+  match protocol_info(self) {
+    Some(info) => info.code
+    None =>
+      match self {
+        Unknown(code) => code
+        _ => abort("known protocol missing from registry")
+      }
   }
 }
 
 ///|
 pub fn Protocol::from_code(code : UInt64) -> Protocol {
-  match code {
-    4UL => Ip4
-    41UL => Ip6
-    53UL => Dns
-    54UL => Dns4
-    55UL => Dns6
-    56UL => Dnsaddr
-    6UL => Tcp
-    273UL => Udp
-    421UL => P2p
-    480UL => Http
-    443UL => Https
-    477UL => Ws
-    478UL => Wss
-    _ => Unknown(code)
+  match protocol_info_by_code(code) {
+    Some(info) => info.protocol
+    None => Unknown(code)
   }
 }
 
 ///|
 pub fn Protocol::name(self : Protocol) -> String? {
-  match self {
-    Ip4 => Some("ip4")
-    Ip6 => Some("ip6")
-    Dns => Some("dns")
-    Dns4 => Some("dns4")
-    Dns6 => Some("dns6")
-    Dnsaddr => Some("dnsaddr")
-    Tcp => Some("tcp")
-    Udp => Some("udp")
-    P2p => Some("p2p")
-    Http => Some("http")
-    Https => Some("https")
-    Ws => Some("ws")
-    Wss => Some("wss")
-    Unknown(_) => None
+  match protocol_info(self) {
+    Some(info) => Some(info.name)
+    None => None
   }
 }
 
 ///|
 pub fn Protocol::from_name(name : StringView) -> Protocol? {
-  match name.to_owned() {
-    "ip4" => Some(Ip4)
-    "ip6" => Some(Ip6)
-    "dns" => Some(Dns)
-    "dns4" => Some(Dns4)
-    "dns6" => Some(Dns6)
-    "dnsaddr" => Some(Dnsaddr)
-    "tcp" => Some(Tcp)
-    "udp" => Some(Udp)
-    "p2p" => Some(P2p)
-    "http" => Some(Http)
-    "https" => Some(Https)
-    "ws" => Some(Ws)
-    "wss" => Some(Wss)
-    _ => None
+  let wanted = name.to_owned()
+  for info in protocol_table() {
+    if info.name == wanted {
+      return Some(info.protocol)
+    }
   }
+  None
 }
 
 ///|
 pub fn Protocol::expected_value_kind(self : Protocol) -> ProtocolValueKind {
-  match self {
-    Ip4 => Ipv4
-    Ip6 => Ipv6
-    Dns | Dns4 | Dns6 | Dnsaddr => Domain
-    Tcp | Udp => Port
-    P2p => PeerId
-    Http | Https | Ws | Wss => Empty
-    Unknown(_) => Raw
+  match protocol_info(self) {
+    Some(info) => info.value_kind
+    None => Raw
   }
 }
 
 ///|
 pub fn Protocol::accepts_value(self : Protocol, value : ProtocolValue) -> Bool {
-  match (self, value) {
-    (Ip4, Ipv4(_)) => true
-    (Ip6, Ipv6(_)) => true
-    (Dns | Dns4 | Dns6 | Dnsaddr, Domain(_)) => true
-    (Tcp | Udp, Port(_)) => true
-    (P2p, PeerId(_)) => true
-    (Http | Https | Ws | Wss, Empty) => true
-    (Unknown(_), Raw(_) | Text(_)) => true
-    _ => false
+  match self {
+    Unknown(_) => value.kind() == Text || value.kind() == Raw
+    _ => self.expected_value_kind() == value.kind()
   }
 }
 
@@ -227,6 +175,20 @@ pub struct PathSegment {
   protocol : Protocol
   value : ProtocolValue
 } derive(Eq, @debug.Debug)
+
+///|
+pub fn ProtocolValue::kind(self : ProtocolValue) -> ProtocolValueKind {
+  match self {
+    Empty => Empty
+    Ipv4(_) => Ipv4
+    Ipv6(_) => Ipv6
+    Domain(_) => Domain
+    Port(_) => Port
+    PeerId(_) => PeerId
+    Text(_) => Text
+    Raw(_) => Raw
+  }
+}
 
 ///|
 pub fn PathSegment::new(

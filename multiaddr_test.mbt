@@ -121,3 +121,36 @@ test "Multiaddr length is bounded before segment accumulation" {
     Err(@moonloom.InputTooLong("multiaddr", 1, 2)),
   )
 }
+
+///|
+test "protocol metadata is driven by the shared registry" {
+  assert_eq(@moonloom.protocol_table().length(), 13)
+  for info in @moonloom.protocol_table() {
+    assert_eq(info.protocol.code(), info.code)
+    assert_eq(info.protocol.name(), Some(info.name))
+    assert_eq(info.protocol.expected_value_kind(), info.value_kind)
+    assert_eq(@moonloom.protocol_info(info.protocol), Some(info))
+  }
+  assert_eq(@moonloom.protocol_info(@moonloom.Unknown(9999UL)), None)
+  assert_eq(@moonloom.protocol_info_by_code(9999UL), None)
+}
+
+///|
+test "protocol value kind is explicit" {
+  assert_eq(
+    @moonloom.ProtocolValue::Empty.kind(),
+    @moonloom.ProtocolValueKind::Empty,
+  )
+  assert_eq(
+    @moonloom.ProtocolValue::Port(80).kind(),
+    @moonloom.ProtocolValueKind::Port,
+  )
+  assert_eq(
+    @moonloom.ProtocolValue::Raw(b"x").kind(),
+    @moonloom.ProtocolValueKind::Raw,
+  )
+  assert_eq(
+    @moonloom.ProtocolValue::Text("x").kind(),
+    @moonloom.ProtocolValueKind::Text,
+  )
+}

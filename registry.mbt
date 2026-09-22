@@ -24,33 +24,76 @@ pub(all) struct CodecInfo {
 /// Snapshot date: 2026-09-21.
 
 ///|
-fn codec_table() -> Array[CodecInfo] {
+pub(all) struct ProtocolInfo {
+  protocol : Protocol
+  code : UInt64
+  name : String
+  value_kind : ProtocolValueKind
+} derive(Eq, @debug.Debug)
+
+///|
+pub fn protocol_table() -> Array[ProtocolInfo] {
+  [
+    { protocol: Ip4, code: 4UL, name: "ip4", value_kind: Ipv4, },
+    { protocol: Tcp, code: 6UL, name: "tcp", value_kind: Port, },
+    { protocol: Ip6, code: 41UL, name: "ip6", value_kind: Ipv6, },
+    { protocol: Dns, code: 53UL, name: "dns", value_kind: Domain, },
+    { protocol: Dns4, code: 54UL, name: "dns4", value_kind: Domain, },
+    { protocol: Dns6, code: 55UL, name: "dns6", value_kind: Domain, },
+    { protocol: Dnsaddr, code: 56UL, name: "dnsaddr", value_kind: Domain, },
+    { protocol: Udp, code: 273UL, name: "udp", value_kind: Port, },
+    { protocol: P2p, code: 421UL, name: "p2p", value_kind: PeerId, },
+    { protocol: Https, code: 443UL, name: "https", value_kind: Empty, },
+    { protocol: Ws, code: 477UL, name: "ws", value_kind: Empty, },
+    { protocol: Wss, code: 478UL, name: "wss", value_kind: Empty, },
+    { protocol: Http, code: 480UL, name: "http", value_kind: Empty, },
+  ]
+}
+
+///|
+pub fn protocol_info(protocol : Protocol) -> ProtocolInfo? {
+  for entry in protocol_table() {
+    if entry.protocol == protocol {
+      return Some(entry)
+    }
+  }
+  None
+}
+
+///|
+pub fn protocol_info_by_code(code : UInt64) -> ProtocolInfo? {
+  for entry in protocol_table() {
+    if entry.code == code {
+      return Some(entry)
+    }
+  }
+  None
+}
+
+///|
+fn named_codec_table() -> Array[CodecInfo] {
   [
     { code: 0UL, name: "identity", category: Hash, },
     { code: 1UL, name: "cidv1", category: Cid, },
-    { code: 4UL, name: "ip4", category: Multiaddr, },
-    { code: 6UL, name: "tcp", category: Multiaddr, },
     { code: 18UL, name: "sha2-256", category: Hash, },
     { code: 19UL, name: "sha2-512", category: Hash, },
     { code: 22UL, name: "sha3-256", category: Hash, },
     { code: 20UL, name: "sha3-512", category: Hash, },
     { code: 30UL, name: "blake3", category: Hash, },
-    { code: 41UL, name: "ip6", category: Multiaddr, },
-    { code: 53UL, name: "dns", category: Multiaddr, },
-    { code: 54UL, name: "dns4", category: Multiaddr, },
-    { code: 55UL, name: "dns6", category: Multiaddr, },
-    { code: 56UL, name: "dnsaddr", category: Multiaddr, },
     { code: 85UL, name: "raw", category: Format, },
     { code: 112UL, name: "dag-pb", category: Format, },
     { code: 113UL, name: "dag-cbor", category: Format, },
     { code: 114UL, name: "libp2p-key", category: Format, },
-    { code: 273UL, name: "udp", category: Multiaddr, },
-    { code: 421UL, name: "p2p", category: Multiaddr, },
-    { code: 443UL, name: "https", category: Multiaddr, },
-    { code: 477UL, name: "ws", category: Multiaddr, },
-    { code: 478UL, name: "wss", category: Multiaddr, },
-    { code: 480UL, name: "http", category: Multiaddr, },
   ]
+}
+
+///|
+pub fn codec_table() -> Array[CodecInfo] {
+  let table = named_codec_table()
+  for entry in protocol_table() {
+    table.push({ code: entry.code, name: entry.name, category: Multiaddr, })
+  }
+  table
 }
 
 ///|
@@ -119,3 +162,9 @@ pub extend CodecInfo with Eq::{not_equal, equal}
 
 ///|
 pub extend CodecInfo with @debug.Debug::{to_repr}
+
+///|
+pub extend ProtocolInfo with Eq::{not_equal, equal}
+
+///|
+pub extend ProtocolInfo with @debug.Debug::{to_repr}

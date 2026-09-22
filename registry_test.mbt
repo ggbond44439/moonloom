@@ -17,3 +17,18 @@ test "multicodec registry exposes category" {
     None => fail("missing dag-pb")
   }
 }
+
+///|
+test "Multiaddr protocol entries are generated into multicodec registry" {
+  for info in @moonloom.protocol_table() {
+    assert_eq(@moonloom.multicodec_name(info.code), Some(info.name))
+    match @moonloom.multicodec_info(info.code) {
+      Some(codec) => {
+        assert_eq(codec.name, info.name)
+        assert_eq(codec.category, @moonloom.Multiaddr)
+      }
+      None => fail("missing protocol codec")
+    }
+  }
+  assert_eq(@moonloom.multicodec_count(), 24)
+}

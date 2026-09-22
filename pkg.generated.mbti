@@ -18,6 +18,8 @@ pub fn cid_from_content(UInt64, HashAlgorithm, BytesView, HashProvider, Limits) 
 
 pub fn cid_v0_from_content(BytesView, HashProvider, Limits) -> Result[Cid, MoonLoomError]
 
+pub fn codec_table() -> Array[CodecInfo]
+
 pub fn decode_u64(BytesView) -> Result[(UInt64, Int), MoonLoomError]
 
 pub fn decode_u64_with_limits(BytesView, Limits) -> Result[(UInt64, Int), MoonLoomError]
@@ -35,6 +37,12 @@ pub fn multicodec_count() -> Int
 pub fn multicodec_info(UInt64) -> CodecInfo?
 
 pub fn multicodec_name(UInt64) -> String?
+
+pub fn protocol_info(Protocol) -> ProtocolInfo?
+
+pub fn protocol_info_by_code(UInt64) -> ProtocolInfo?
+
+pub fn protocol_table() -> Array[ProtocolInfo]
 
 pub fn sha2_provider() -> HashProvider
 
@@ -268,6 +276,16 @@ pub fn Protocol::name(Self) -> String?
 pub fn Protocol::not_equal(Self, Self) -> Bool
 pub fn Protocol::to_repr(Self) -> @debug.Repr
 
+pub(all) struct ProtocolInfo {
+  protocol : Protocol
+  code : UInt64
+  name : String
+  value_kind : ProtocolValueKind
+} derive(Eq, @debug.Debug)
+pub fn ProtocolInfo::equal(Self, Self) -> Bool
+pub fn ProtocolInfo::not_equal(Self, Self) -> Bool
+pub fn ProtocolInfo::to_repr(Self) -> @debug.Repr
+
 pub(all) enum ProtocolValue {
   Empty
   Ipv4(Ipv4Address)
@@ -279,6 +297,7 @@ pub(all) enum ProtocolValue {
   Raw(Bytes)
 } derive(Eq, @debug.Debug)
 pub fn ProtocolValue::equal(Self, Self) -> Bool
+pub fn ProtocolValue::kind(Self) -> ProtocolValueKind
 pub fn ProtocolValue::not_equal(Self, Self) -> Bool
 pub fn ProtocolValue::to_repr(Self) -> @debug.Repr
 

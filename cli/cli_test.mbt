@@ -29,10 +29,13 @@ test "CLI reports unknown commands and options without panicking" {
 
 ///|
 test "CLI reports not-yet-implemented commands deterministically" {
-  let result = @cli.run(["cid", "decode", "bafy"])
+  let result = @cli.run(["multiaddr", "parse", "/http"])
   assert_eq(result.exit_code, 3)
   assert_eq(result.stdout, "")
-  assert_eq(result.stderr, "moonloom: command 'cid' is not implemented yet")
+  assert_eq(
+    result.stderr,
+    "moonloom: command 'multiaddr' is not implemented yet",
+  )
 }
 
 ///|
@@ -78,6 +81,40 @@ test "Multihash CLI creates, inspects, and verifies values" {
   )
   assert_eq(
     @cli.run(["multihash", "verify", "--json", digest.stdout, "world"]).stdout,
+    "{\"match\":false}",
+  )
+}
+
+///|
+test "CID CLI creates canonical CIDv1 and CIDv0 values" {
+  let v1 = @cli.run(["cid", "encode", "hello"])
+  assert_eq(v1.exit_code, 0)
+  assert_eq(
+    v1.stdout,
+    "bafkreibm6jg3ux5qumhcn2b3flc3tyu6dmlb4xa7u5bf44yegnrjhc4yeq",
+  )
+  let v0 = @cli.run([
+    "cid", "encode", "--version", "0", "--codec", "dag-pb", "hello",
+  ])
+  assert_eq(v0.stdout, "QmRN6wdp1S2A5EtjW9A3M1vKSBuQQGcgvuhoMUoEz4iiT5")
+  assert_eq(@cli.run(["cid", "encode", "--version", "0", "hello"]).exit_code, 2)
+}
+
+///|
+test "CID CLI emits structured results and verifies content" {
+  let encoded = @cli.run(["cid", "encode", "--json", "hello"])
+  assert_eq(
+    encoded.stdout,
+    "{\"version\":1,\"codec\":\"raw\",\"cid\":\"bafkreibm6jg3ux5qumhcn2b3flc3tyu6dmlb4xa7u5bf44yegnrjhc4yeq\",\"hash_algorithm\":\"sha2-256\",\"digest_base64\":\"LPJNul+wow4m6DsqxbninhsWHlwfp0JecwQzYpOLmCQ=\"}",
+  )
+  let cid = "bafkreibm6jg3ux5qumhcn2b3flc3tyu6dmlb4xa7u5bf44yegnrjhc4yeq"
+  let decoded = @cli.run(["cid", "decode", cid])
+  assert_eq(decoded.exit_code, 0)
+  assert_true(decoded.stdout.contains("codec: raw"))
+  assert_eq(@cli.run(["cid", "verify", cid, "hello"]).stdout, "match")
+  assert_eq(@cli.run(["cid", "verify", cid, "world"]).exit_code, 1)
+  assert_eq(
+    @cli.run(["cid", "verify", "--json", cid, "world"]).stdout,
     "{\"match\":false}",
   )
 }

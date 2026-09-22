@@ -14,6 +14,8 @@ pub fn parse_invocation(ArrayView[String]) -> Result[CliInvocation, CliError]
 
 pub fn run(ArrayView[String]) -> CliResult
 
+pub fn run_cid(CliInvocation) -> CliResult
+
 pub fn run_multibase(CliInvocation) -> CliResult
 
 pub fn run_multihash(CliInvocation) -> CliResult

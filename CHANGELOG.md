@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Stabilized public naming, inspection, and resource-limit helpers.
+- Added canonical name lookups for Multibase and hash algorithms.
+- Added shared codec-category lookup and raw codec identifier.
 - Added Multihash binary encoding and strict decoding.
 - Added `identity`, `sha2-256`, and `sha2-512` hash semantics.
 - Added the `HashProvider` boundary and bundled MoonCrypt SHA-2 provider.

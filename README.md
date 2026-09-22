@@ -22,6 +22,8 @@ The format core is implemented and tested:
 - CIDv0 and CIDv1 encoding, decoding, canonical text output, and content
   verification.
 - Typed errors with byte offsets and configurable resource limits.
+- Stable public API conventions for construction, parsing, verification, and
+  extension seams, documented in `docs/api-contracts.md`.
 - Cross-target-friendly MoonBit code with no FFI dependency.
 
 The remaining milestones add Multiaddr, the CLI, interop vectors, and

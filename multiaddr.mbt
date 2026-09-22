@@ -723,6 +723,119 @@ pub fn Multiaddr::parse_bytes(
 }
 
 ///|
+const HEX_DIGITS : Bytes = b"0123456789abcdef"
+
+///|
+pub fn Ipv4Address::to_text(self : Ipv4Address) -> String {
+  let out = StringBuilder(size_hint=15)
+  out.write_string(self.octets[0].to_int().to_string())
+  out.write_char('.')
+  out.write_string(self.octets[1].to_int().to_string())
+  out.write_char('.')
+  out.write_string(self.octets[2].to_int().to_string())
+  out.write_char('.')
+  out.write_string(self.octets[3].to_int().to_string())
+  out.to_string()
+}
+
+///|
+fn Ipv6Address::group(self : Ipv6Address, index : Int) -> Int {
+  let offset = index * 2
+  (self.octets[offset].to_int() << 8) | self.octets[offset + 1].to_int()
+}
+
+///|
+fn write_ipv6_group(out : StringBuilder, value : Int) -> Unit {
+  let mut started = false
+  for shift in [12, 8, 4, 0] {
+    let digit = (value >> shift) & 0x0F
+    if digit != 0 || started || shift == 0 {
+      started = true
+      out.write_char(HEX_DIGITS[digit].to_char())
+    }
+  }
+}
+
+///|
+pub fn Ipv6Address::to_text(self : Ipv6Address) -> String {
+  let groups : Array[Int] = Array(capacity=8)
+  for index in 0..<8 {
+    groups.push(self.group(index))
+  }
+  let mut best_start = -1
+  let mut best_length = 0
+  let mut index = 0
+  while index < groups.length() {
+    if groups[index] != 0 {
+      index += 1
+      continue
+    }
+    let start = index
+    while index < groups.length() && groups[index] == 0 {
+      index += 1
+    }
+    let length = index - start
+    if length > best_length {
+      best_start = start
+      best_length = length
+    }
+  }
+  let compress = best_length >= 2
+  let out = StringBuilder(size_hint=39)
+  let mut index = 0
+  while index < groups.length() {
+    if compress && index == best_start {
+      out.write_string("::")
+      index += best_length
+    } else {
+      if index > 0 && !(compress && index == best_start + best_length) {
+        out.write_char(':')
+      }
+      write_ipv6_group(out, groups[index])
+      index += 1
+    }
+  }
+  out.to_string()
+}
+
+///|
+fn render_segment(segment : PathSegment) -> Result[String, MoonLoomError] {
+  let protocol = segment.protocol()
+  match protocol {
+    Unknown(_) =>
+      Err(UnknownProtocol("protocol-" + protocol.code().to_string()))
+    _ => {
+      let value = match segment.value() {
+        Empty => ""
+        Ipv4(address) => "/" + address.to_text()
+        Ipv6(address) => "/" + address.to_text()
+        Domain(value) | PeerId(value) => "/" + value
+        Port(value) => "/" + value.to_string()
+        Text(_) | Raw(_) =>
+          return Err(InvalidProtocolValue(protocol.diagnostic_name()))
+      }
+      Ok("/" + protocol.diagnostic_name() + value)
+    }
+  }
+}
+
+///|
+pub fn Multiaddr::to_text(self : Multiaddr) -> Result[String, MoonLoomError] {
+  if self.is_empty() {
+    return Ok("")
+  }
+  let out = StringBuilder()
+  for segment in self.segments {
+    let rendered = match render_segment(segment) {
+      Ok(value) => value
+      Err(err) => return Err(err)
+    }
+    out.write_string(rendered)
+  }
+  Ok(out.to_string())
+}
+
+///|
 pub extend Protocol with Eq::{not_equal, equal}
 
 ///|

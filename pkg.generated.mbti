@@ -151,6 +151,7 @@ pub fn Ipv4Address::new(Int, Int, Int, Int) -> Result[Self, MoonLoomError]
 pub fn Ipv4Address::not_equal(Self, Self) -> Bool
 pub fn Ipv4Address::octets(Self) -> BytesView
 pub fn Ipv4Address::to_repr(Self) -> @debug.Repr
+pub fn Ipv4Address::to_text(Self) -> String
 
 pub struct Ipv6Address {
   octets : Bytes
@@ -160,6 +161,7 @@ pub fn Ipv6Address::from_octets(BytesView) -> Result[Self, MoonLoomError]
 pub fn Ipv6Address::not_equal(Self, Self) -> Bool
 pub fn Ipv6Address::octets(Self) -> BytesView
 pub fn Ipv6Address::to_repr(Self) -> @debug.Repr
+pub fn Ipv6Address::to_text(Self) -> String
 
 pub struct Limits {
   max_input_bytes : Int
@@ -223,6 +225,7 @@ pub fn Multiaddr::push(Self, PathSegment, Limits) -> Result[Self, MoonLoomError]
 pub fn Multiaddr::segments(Self) -> ArrayView[PathSegment]
 pub fn Multiaddr::to_bytes(Self, Limits) -> Result[Bytes, MoonLoomError]
 pub fn Multiaddr::to_repr(Self) -> @debug.Repr
+pub fn Multiaddr::to_text(Self) -> Result[String, MoonLoomError]
 
 pub(all) struct Multihash {
   code : UInt64

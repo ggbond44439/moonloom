@@ -372,3 +372,76 @@ test "Multiaddr binary parser rejects truncation and unknown codes" {
     Err(@moonloom.UnknownProtocol("protocol-16287")),
   )
 }
+
+///|
+test "IPv6 canonical text follows RFC 5952 compression" {
+  let cases = [
+    ("2001:0db8:0000:0000:0000:0000:0000:0001", "2001:db8::1"),
+    ("0000:0000:0000:0000:0000:0000:0000:0001", "::1"),
+    ("2001:0db8:0000:0000:0000:0000:0000:0000", "2001:db8::"),
+    ("0000:0000:0000:0000:0000:0000:0000:0000", "::"),
+    ("2001:0000:0000:0001:0000:0000:0000:0001", "2001:0:0:1::1"),
+  ]
+  let limits = @moonloom.Limits::default()
+  for pair in cases {
+    let parsed = match @moonloom.Multiaddr::parse("/ip6/" + pair.0, limits) {
+      Ok(value) => value
+      Err(err) => fail(pair.0 + ": " + err.to_string())
+    }
+    assert_eq(parsed.to_text(), Ok("/ip6/" + pair.1))
+  }
+}
+
+///|
+test "Multiaddr canonical text round trips typed values" {
+  let limits = @moonloom.Limits::default()
+  let values = [
+    "/ip4/127.0.0.1/tcp/8080", "/ip6/2001:0db8:0:0:0:0:0:1/udp/53", "/dns/example.com/tcp/443/https",
+    "/p2p/QmdfTbBqBPQ7VNxZEYEj14VmRuZBkqFbiwReogJgS1zR1n", "/ws",
+  ]
+  for text in values {
+    let parsed = match @moonloom.Multiaddr::parse(text, limits) {
+      Ok(value) => value
+      Err(err) => fail(text + ": " + err.to_string())
+    }
+    let canonical = match parsed.to_text() {
+      Ok(value) => value
+      Err(err) => fail(text + ": " + err.to_string())
+    }
+    let reparsed = match @moonloom.Multiaddr::parse(canonical, limits) {
+      Ok(value) => value
+      Err(err) => fail(canonical + ": " + err.to_string())
+    }
+    assert_eq(reparsed, parsed)
+  }
+  let compressed = match
+    @moonloom.Multiaddr::parse("/ip6/2001:0db8:0:0:0:0:0:1/udp/53", limits) {
+    Ok(value) => value
+    Err(err) => fail(err.to_string())
+  }
+  assert_eq(compressed.to_text(), Ok("/ip6/2001:db8::1/udp/53"))
+}
+
+///|
+test "empty and unknown Multiaddr text output is explicit" {
+  let empty = match
+    @moonloom.Multiaddr::parse("", @moonloom.Limits::default()) {
+    Ok(value) => value
+    Err(err) => fail(err.to_string())
+  }
+  assert_eq(empty.to_text(), Ok(""))
+  let unknown = match
+    @moonloom.PathSegment::new(
+      @moonloom.Unknown(9999UL),
+      @moonloom.ProtocolValue::Text("value"),
+    ) {
+    Ok(value) => value
+    Err(err) => fail(err.to_string())
+  }
+  let value = match
+    @moonloom.Multiaddr::from_segments([unknown], @moonloom.Limits::default()) {
+    Ok(value) => value
+    Err(err) => fail(err.to_string())
+  }
+  assert_eq(value.to_text(), Err(@moonloom.UnknownProtocol("protocol-9999")))
+}

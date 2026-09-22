@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Added the shared `ProtocolInfo` registry for Multiaddr protocol metadata.
+- Removed duplicated protocol code/name/value-kind mappings from Multiaddr.
 - Added the typed Multiaddr domain model and protocol/value validation.
 - Stabilized public naming, inspection, and resource-limit helpers.
 - Added canonical name lookups for Multibase and hash algorithms.

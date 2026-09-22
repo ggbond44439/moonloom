@@ -15,8 +15,8 @@ The format core is implemented and tested:
 
 - Canonical unsigned varint encoding and strict decoding.
 - Multibase codecs for base16, base32, base58btc, base64, and URL-safe base64.
-- A curated multicodec registry covering CID, hash, content format, and core
-  Multiaddr protocol identifiers.
+- A single registry covering CID, hash, content format, and Multiaddr protocol
+  metadata, including value kinds and canonical names.
 - Multihash binary encoding with `identity`, `sha2-256`, and `sha2-512`.
 - Multihash verification through an explicit hash-provider boundary.
 - CIDv0 and CIDv1 encoding, decoding, canonical text output, and content

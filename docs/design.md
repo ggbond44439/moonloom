@@ -9,7 +9,8 @@ does not reach backward into a higher layer.
 1. `Limits` defines allocation and input boundaries.
 2. `MoonLoomError` is the shared typed failure surface.
 3. `varint` handles the unsigned prefix encoding used by other formats.
-4. `registry` maps stable multicodec numbers to reviewed names and categories.
+4. `registry` is the single source for stable multicodec numbers, names,
+   categories, and Multiaddr protocol value kinds.
 5. `multibase` converts bytes to and from self-describing text strings.
 6. `multihash` combines a hash code, digest length, and digest.
 7. `cid` combines a version, codec, and multihash.
@@ -64,6 +65,8 @@ typed Multiaddr model
 - Encoders are deterministic and use the shortest valid representation.
 - Unknown registry and multihash codes remain unknown; MoonLoom never guesses
   a name or silently substitutes an algorithm.
+- Multiaddr protocol metadata is generated into the codec view instead of
+  maintaining a second protocol list.
 - Resource limits are checked before allocation.
 - Public errors carry enough context to locate the failing byte.
 - CID verification is an explicit operation with an explicit provider.

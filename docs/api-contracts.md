@@ -44,8 +44,8 @@ raw fields directly.
 - `HashProvider` decouples Multihash and CID verification from cryptographic
   implementations.
 - `Base` and `supported_bases` define the text-encoding registry.
-- `multicodec_info`, `multicodec_code`, and `CodecCategory` define the shared
-  numeric registry.
+- `multicodec_info`, `multicodec_code`, `protocol_info`, and `CodecCategory`
+  define the shared numeric registry.
 - Multiaddr path values are constructed through `PathSegment::new` so invalid
   protocol/value combinations cannot enter the typed model.
 - Future Multiaddr protocol codecs must consume registry metadata instead of

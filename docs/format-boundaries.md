@@ -124,6 +124,10 @@ Implemented protocols:
 
 Rules:
 
+- `protocol_table` is the authoritative registry for protocol code, name, and
+  expected value kind.
+- `multicodec_info` exposes Multiaddr protocol entries through the same numeric
+  codec view as CID, hash, and content formats.
 - A protocol declares the kind of value it accepts.
 - TCP and UDP ports must be in `0..=65535`.
 - DNS and peer identifiers must be non-empty and at most 255 UTF-16 code units.

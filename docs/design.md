@@ -13,7 +13,8 @@ does not reach backward into a higher layer.
 5. `multibase` converts bytes to and from self-describing text strings.
 6. `multihash` combines a hash code, digest length, and digest.
 7. `cid` combines a version, codec, and multihash.
-8. A future `multiaddr` layer composes the same registry and varint primitives.
+8. `multiaddr` models protocols, typed values, and path segments before text or
+   binary codecs are attached.
 
 ## Hash boundary
 
@@ -34,6 +35,11 @@ CID text
   -> CID version and codec decode
   -> Multihash decode
   -> bytes
+
+Multiaddr text
+  -> future protocol/value parser
+  -> typed Multiaddr model
+  -> future binary protocol codec
 ```
 
 Binary to text:
@@ -44,6 +50,10 @@ content bytes
   -> Multihash
   -> CID
   -> canonical CID text
+
+typed Multiaddr model
+  -> future protocol registry metadata
+  -> canonical Multiaddr text
 ```
 
 ## Invariants
@@ -57,6 +67,7 @@ content bytes
 - Resource limits are checked before allocation.
 - Public errors carry enough context to locate the failing byte.
 - CID verification is an explicit operation with an explicit provider.
+- Multiaddr path values are validated before they enter a `Multiaddr` value.
 
 ## Deliberate omissions
 

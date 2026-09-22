@@ -46,6 +46,8 @@ raw fields directly.
 - `Base` and `supported_bases` define the text-encoding registry.
 - `multicodec_info`, `multicodec_code`, and `CodecCategory` define the shared
   numeric registry.
+- Multiaddr path values are constructed through `PathSegment::new` so invalid
+  protocol/value combinations cannot enter the typed model.
 - Future Multiaddr protocol codecs must consume registry metadata instead of
   hard-coding protocol names in parser branches.
 

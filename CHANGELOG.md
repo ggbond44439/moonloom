@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Added the typed Multiaddr domain model and protocol/value validation.
 - Stabilized public naming, inspection, and resource-limit helpers.
 - Added canonical name lookups for Multibase and hash algorithms.
 - Added shared codec-category lookup and raw codec identifier.

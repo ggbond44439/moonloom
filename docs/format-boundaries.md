@@ -109,6 +109,29 @@ CIDv1 rules:
 Content verification calls the supplied `HashProvider`. CID verification never
 reimplements or silently substitutes a hash algorithm.
 
+## Multiaddr domain model
+
+The current milestone provides an in-memory, typed model only. It does not yet
+parse or serialize Multiaddr text.
+
+Implemented protocols:
+
+- `ip4`, `ip6`
+- `dns`, `dns4`, `dns6`, `dnsaddr`
+- `tcp`, `udp`
+- `p2p`
+- `http`, `https`, `ws`, `wss`
+
+Rules:
+
+- A protocol declares the kind of value it accepts.
+- TCP and UDP ports must be in `0..=65535`.
+- DNS and peer identifiers must be non-empty and at most 255 UTF-16 code units.
+- IPv4 values are exactly four bytes; IPv6 values are exactly sixteen bytes.
+- Unknown protocol codes remain representable as `Protocol::Unknown(code)`.
+- Text parsing and binary encoding are deliberately deferred to the next
+  milestones.
+
 ## Limits
 
 `Limits` bounds input length, varint width, digest size, and future Multiaddr
@@ -117,7 +140,7 @@ be lowered by applications that process untrusted input.
 
 ## Not implemented yet
 
-- Multiaddr text/binary codecs
+- Multiaddr text and binary codecs
 - CLI commands
 - Mooncakes publication
 - CIDv2 or other future versions

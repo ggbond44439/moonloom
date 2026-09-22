@@ -21,6 +21,8 @@ The format core is implemented and tested:
 - Multihash verification through an explicit hash-provider boundary.
 - CIDv0 and CIDv1 encoding, decoding, canonical text output, and content
   verification.
+- A typed Multiaddr domain model with reusable protocol, protocol-value,
+  path-segment, IPv4, and IPv6 types.
 - Typed errors with byte offsets and configurable resource limits.
 - Stable public API conventions for construction, parsing, verification, and
   extension seams, documented in `docs/api-contracts.md`.

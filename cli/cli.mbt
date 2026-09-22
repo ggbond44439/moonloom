@@ -147,17 +147,7 @@ pub fn run(args : ArrayView[String]) -> CliResult {
     Multibase => run_multibase(invocation)
     Multihash => run_multihash(invocation)
     Cid => run_cid(invocation)
-    Multiaddr =>
-      if invocation.help {
-        CliResult::success(
-          "moonloom \{invocation.command.name()}: command help will be added in the next CLI stage.",
-        )
-      } else {
-        CliResult::failure(
-          3,
-          "moonloom: command '\{invocation.command.name()}' is not implemented yet",
-        )
-      }
+    Multiaddr => run_multiaddr(invocation)
   }
 }
 

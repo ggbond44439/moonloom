@@ -28,13 +28,30 @@ test "CLI reports unknown commands and options without panicking" {
 }
 
 ///|
-test "CLI reports not-yet-implemented commands deterministically" {
-  let result = @cli.run(["multiaddr", "parse", "/http"])
-  assert_eq(result.exit_code, 3)
-  assert_eq(result.stdout, "")
+test "Multiaddr CLI parses, encodes, decodes, and emits JSON" {
   assert_eq(
-    result.stderr,
-    "moonloom: command 'multiaddr' is not implemented yet",
+    @cli.run(["multiaddr", "parse", "/ip6/2001:0db8::1/tcp/80"]).stdout,
+    "/ip6/2001:db8::1/tcp/80",
+  )
+  assert_eq(
+    @cli.run(["multiaddr", "encode", "/ip4/127.0.0.1/tcp/8080"]).stdout,
+    "047f000001061f90",
+  )
+  assert_eq(
+    @cli.run(["multiaddr", "parse", "--json", "/ip4/127.0.0.1/tcp/8080"]).stdout,
+    "{\"multiaddr\":\"/ip4/127.0.0.1/tcp/8080\",\"binary_base64\":\"BH8AAAEGH5A=\",\"binary_hex\":\"047f000001061f90\"}",
+  )
+  assert_eq(
+    @cli.run(["multiaddr", "decode", "BH8AAAEGH5A="]).stdout,
+    "/ip4/127.0.0.1/tcp/8080",
+  )
+  assert_eq(
+    @cli.run(["multiaddr", "decode", "--format", "hex", "047f000001061f90"]).stdout,
+    "/ip4/127.0.0.1/tcp/8080",
+  )
+  assert_eq(
+    @cli.run(["multiaddr", "decode", "--format", "hex", "zz"]).exit_code,
+    2,
   )
 }
 

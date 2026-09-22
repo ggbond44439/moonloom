@@ -19,10 +19,11 @@ moonloom multihash verify <multibase-multihash> <text>
 moonloom cid encode [--version 0|1] [--codec <name>] [--algorithm <name>] <text>
 moonloom cid decode <cid>
 moonloom cid verify <cid> <text>
-```
 
-Multiaddr command names are reserved and are implemented in the next CLI
-stage.
+moonloom multiaddr parse <text>
+moonloom multiaddr encode <text>
+moonloom multiaddr decode [--format base64|hex] <data>
+```
 
 ## Global options
 

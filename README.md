@@ -34,6 +34,8 @@ The format core is implemented and tested:
   verification.
 - CID CLI commands for CIDv0/CIDv1 creation, inspection, and content
   verification.
+- Multiaddr CLI commands for canonical parsing, binary encoding, and base64 or
+  hex decoding.
 - Typed errors with byte offsets and configurable resource limits.
 - Reusable bounded `WireReader` and `WireWriter` primitives shared by all
   Multiformats codecs.

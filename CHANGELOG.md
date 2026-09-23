@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Added runnable CID, Multiaddr, and cross-language fixture examples.
 - Added Multiaddr CLI parsing, encoding, decoding, and JSON output.
 - Added CID CLI commands for encoding, decoding, and verification.
 - Added Multibase and Multihash CLI commands with JSON output.

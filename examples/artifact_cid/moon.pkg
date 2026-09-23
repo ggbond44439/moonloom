@@ -1,0 +1,5 @@
+import {
+  "ggbond44439/moonloom",
+}
+
+pkgtype(kind: "executable")

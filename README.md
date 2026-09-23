@@ -4,60 +4,47 @@ MoonLoom is a pure MoonBit toolkit for self-describing content addressing. It
 brings Multibase, Multicodec, Multihash, CID, and Multiaddr into one small,
 strict, deterministic library.
 
-The project is intentionally not a full IPFS implementation. MoonLoom focuses
-on the format layer: creating canonical identifiers, converting between text
-and bytes, validating input, and preserving interoperability with the
-Multiformats ecosystem.
+MoonLoom is not a full IPFS implementation. It focuses on the format layer:
+creating canonical identifiers, converting between text and bytes, validating
+input, and preserving interoperability with the Multiformats ecosystem.
 
-## Current milestone
-
-The format core is implemented and tested:
+## Features
 
 - Canonical unsigned varint encoding and strict decoding.
-- Multibase codecs for base16, base32, base58btc, base64, and URL-safe base64.
-- A single registry covering CID, hash, content format, and Multiaddr protocol
-  metadata, including value kinds and canonical names.
-- Multihash binary encoding with `identity`, `sha2-256`, and `sha2-512`.
-- Multihash verification through an explicit hash-provider boundary.
-- CIDv0 and CIDv1 encoding, decoding, canonical text output, and content
-  verification.
-- A typed Multiaddr domain model with reusable protocol, protocol-value,
-  path-segment, IPv4, and IPv6 types.
-- A strict Multiaddr text parser for supported IP, DNS, port, peer, and unit
-  protocols.
-- Deterministic Multiaddr binary encoding and decoding using the shared varint
-  and protocol registry.
-- Canonical Multiaddr text output with RFC 5952 IPv6 compression.
-- A reusable `cli` package with process-independent command parsing, help,
-  version, global `--json`, and deterministic exit codes.
-- Multibase and Multihash CLI commands for encoding, digesting, inspection, and
-  verification.
-- CID CLI commands for CIDv0/CIDv1 creation, inspection, and content
-  verification.
-- Multiaddr CLI commands for canonical parsing, binary encoding, and base64 or
-  hex decoding.
-- Typed errors with byte offsets and configurable resource limits.
-- Reusable bounded `WireReader` and `WireWriter` primitives shared by all
-  Multiformats codecs.
-- Stable public API conventions for construction, parsing, verification, and
-  extension seams, documented in `docs/api-contracts.md`.
-- Cross-target-friendly MoonBit code with no FFI dependency.
+- Multibase for base16, base32, base58btc, base64, and URL-safe base64.
+- One registry for CID, hash, content format, and Multiaddr protocol metadata.
+- Multihash with `identity`, `sha2-256`, and `sha2-512`.
+- CIDv0 and CIDv1 creation, parsing, canonical text, and verification.
+- Typed Multiaddr model, strict text parser, binary codec, and RFC 5952 IPv6
+  canonical text.
+- Reusable bounded `WireReader` and `WireWriter` primitives.
+- Typed errors, byte offsets, and configurable resource limits.
+- Multibase, Multihash, CID, and Multiaddr CLI commands.
+- wasm, wasm-gc, JS, and Native target checking.
 
-The remaining milestones add Multiaddr, the CLI, interop vectors, and
-Mooncakes publication.
+## Install
+
+```text
+moon add ggbond44439/moonloom@0.1.1
+```
+
+In another MoonBit package:
+
+```text
+import {
+  "ggbond44439/moonloom" @moonloom,
+}
+```
 
 ## Quick start
 
 ```moonbit
-let encoded = @moonloom.encode_u64(300UL)
-assert_eq(encoded, b"\xac\x02")
-
 let text = @moonloom.multibase_encode(@moonloom.Base32, b"hello")
 assert_eq(text, Ok("bnbswy3dp"))
 
 let provider = @moonloom.sha2_provider()
 let cid = match @moonloom.cid_from_content(
-  85UL,
+  @moonloom.RAW_CODEC,
   @moonloom.Sha2_256,
   b"hello",
   provider,
@@ -77,40 +64,36 @@ assert_eq(
 )
 ```
 
-## Why MoonLoom
+## CLI
 
-MoonBit increasingly needs to exchange content-addressed data with other
-ecosystems: build artifacts, offline caches, package integrity manifests,
-decentralized identifiers, and peer addresses. Those formats already have
-precise specifications and conformance vectors, but MoonBit lacked one shared,
-bounded implementation.
+```text
+moonloom --help
+moonloom version
 
-MoonLoom is useful in at least three practical scenarios:
+moonloom multibase encode [--base <name>] <text>
+moonloom multibase decode <multibase-text>
 
-1. Create and verify a stable CID for a build artifact or offline cache entry.
-2. Convert CIDs, multihashes, and future Multiaddrs between text and binary for
-   cross-language protocol fixtures.
-3. Verify content obtained from a cache, mirror, or peer before accepting it.
+moonloom multihash digest [--algorithm sha2-256|sha2-512] <text>
+moonloom multihash inspect <multibase-multihash>
+moonloom multihash verify <multibase-multihash> <text>
 
-## Design rules
+moonloom cid encode [--version 0|1] [--codec <name>] [--algorithm <name>] <text>
+moonloom cid decode <cid>
+moonloom cid verify <cid> <text>
 
-- Canonical output by default.
-- Strict decoding with typed errors and byte offsets.
-- Every parser and content verifier is bounded by `Limits`.
-- No panic for malformed external input.
-- Registry data is centralized and reviewed.
-- Text and binary round trips are deterministic.
-- Cryptographic algorithms are provided by adapters, never reimplemented here.
-- SHA-2 support is delegated to Apache-2.0 MoonCrypt.
+moonloom multiaddr parse <text>
+moonloom multiaddr encode <text>
+moonloom multiaddr decode [--format base64|hex] <data>
+```
 
-## Interoperability
+Run the local CLI with:
 
-Standard vectors and malformed-input coverage are documented in
-`docs/interop.md`.
+```text
+moon run cmd/main -- version
+moon run cmd/main -- cid encode hello
+```
 
 ## Examples
-
-The repository includes three runnable examples:
 
 ```text
 moon run examples/artifact_cid
@@ -118,7 +101,12 @@ moon run examples/multiaddr_normalize
 moon run examples/cross_language_fixture
 ```
 
-See `examples/README.md` for details.
+## Standards
+
+- RFC 4648 base encodings
+- Multiformats Multibase, Multicodec, Multihash, CID, and Multiaddr
+- RFC 5952 IPv6 canonical text
+- SHA-2 through the Apache-2.0 MoonCrypt package
 
 ## Build and test
 
@@ -126,14 +114,16 @@ See `examples/README.md` for details.
 moon check --target all
 moon test --target all
 moon build
+moon package --list
 ```
 
 ## Status
 
-MoonLoom `0.1.0` is the format-core release candidate for the 2026 September
-MoonBit Hackathon. The library, CLI, examples, cross-language vectors, and CI
-matrix are complete for the scoped formats.
+MoonLoom `0.1.1` is the format-core release for the 2026 September MoonBit
+Hackathon. The library, CLI, examples, interoperability vectors, and CI matrix
+are complete for the scoped formats.
 
 ## License
 
 Apache-2.0.
+

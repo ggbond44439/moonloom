@@ -130,9 +130,9 @@ moon build
 
 ## Status
 
-MoonLoom is under active construction for the 2026 September MoonBit
-Hackathon. Version `0.1.0` is the internal format-core milestone, not the final
-published API.
+MoonLoom `0.1.0` is the format-core release candidate for the 2026 September
+MoonBit Hackathon. The library, CLI, examples, cross-language vectors, and CI
+matrix are complete for the scoped formats.
 
 ## License
 

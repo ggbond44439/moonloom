@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.0 - 2026-09-23
 
 - Added pinned interoperability vectors and deterministic malformed-input hardening tests.
 - Added runnable CID, Multiaddr, and cross-language fixture examples.

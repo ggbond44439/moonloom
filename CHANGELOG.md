@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Added pinned interoperability vectors and deterministic malformed-input hardening tests.
 - Added runnable CID, Multiaddr, and cross-language fixture examples.
 - Added Multiaddr CLI parsing, encoding, decoding, and JSON output.
 - Added CID CLI commands for encoding, decoding, and verification.

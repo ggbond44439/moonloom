@@ -103,6 +103,11 @@ MoonLoom is useful in at least three practical scenarios:
 - Cryptographic algorithms are provided by adapters, never reimplemented here.
 - SHA-2 support is delegated to Apache-2.0 MoonCrypt.
 
+## Interoperability
+
+Standard vectors and malformed-input coverage are documented in
+`docs/interop.md`.
+
 ## Examples
 
 The repository includes three runnable examples:

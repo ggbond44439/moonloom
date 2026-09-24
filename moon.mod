@@ -1,6 +1,6 @@
 name = "ggbond44439/moonloom"
 
-version = "0.1.1"
+version = "0.1.2"
 
 readme = "README.md"
 
@@ -23,4 +23,5 @@ description = "MoonLoom is a self-describing content-addressing toolkit for Moon
 
 import {
   "moonbitstack/mooncrypt@0.2.2",
+  "moonbitstack/moonbase@0.4.0",
 }

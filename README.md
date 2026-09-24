@@ -4,6 +4,11 @@ MoonLoom is a pure MoonBit toolkit for self-describing content addressing. It
 brings Multibase, Multicodec, Multihash, CID, and Multiaddr into one small,
 strict, deterministic library.
 
+MoonLoom builds on `moonbitstack/moonbase`, which provides the underlying
+base16, base32, base58, and base64 codecs. MoonLoom does not reimplement those
+encodings. It adds self-describing Multibase prefixes, the shared Multicodec
+registry, Multihash, CID, Multiaddr, bounded wire primitives, and the CLI.
+
 MoonLoom is not a full IPFS implementation. It focuses on the format layer:
 creating canonical identifiers, converting between text and bytes, validating
 input, and preserving interoperability with the Multiformats ecosystem.
@@ -25,7 +30,7 @@ input, and preserving interoperability with the Multiformats ecosystem.
 ## Install
 
 ```text
-moon add ggbond44439/moonloom@0.1.1
+moon add ggbond44439/moonloom@0.1.2
 ```
 
 In another MoonBit package:
@@ -101,6 +106,23 @@ moon run examples/multiaddr_normalize
 moon run examples/cross_language_fixture
 ```
 
+## Relationship with Moonbase
+
+MoonLoom directly depends on `moonbitstack/moonbase@0.4.0`. Moonbase owns
+the byte encoder and decoder implementations for base16, base32, base58, and
+base64. MoonLoom delegates those codecs to Moonbase and contributes the layers
+above them:
+
+- Multibase prefix lookup and canonical text validation;
+- Multicodec registry shared by CID and Multiaddr;
+- Multihash, CIDv0/CIDv1, and content verification;
+- Multiaddr typed model, text parser, and binary codec;
+- bounded wire reader/writer and typed resource-limit errors;
+- CLI, examples, interoperability vectors, and multi-backend CI.
+
+This dependency relationship is intentional and part of the public project
+scope. MoonLoom is an extension and composition layer, not a competing encoder.
+
 ## Standards
 
 - RFC 4648 base encodings
@@ -119,7 +141,7 @@ moon package --list
 
 ## Status
 
-MoonLoom `0.1.1` is the format-core release for the 2026 September MoonBit
+MoonLoom `0.1.2` is the format-core release for the 2026 September MoonBit
 Hackathon. The library, CLI, examples, interoperability vectors, and CI matrix
 are complete for the scoped formats.
 

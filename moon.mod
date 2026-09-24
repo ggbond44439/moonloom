@@ -10,6 +10,7 @@ license = "Apache-2.0"
 
 keywords = [
   "multiformats",
+  "moonbase",
   "multibase",
   "multicodec",
   "multihash",
@@ -19,7 +20,7 @@ keywords = [
 
 preferred_target = "wasm"
 
-description = "MoonLoom is a self-describing content-addressing toolkit for MoonBit."
+description = "MoonLoom is a MoonBit self-describing content-addressing layer built on Moonbase."
 
 import {
   "moonbitstack/mooncrypt@0.2.2",

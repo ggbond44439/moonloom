@@ -30,5 +30,5 @@ test "Multiaddr protocol entries are generated into multicodec registry" {
       None => fail("missing protocol codec")
     }
   }
-  assert_eq(@moonloom.multicodec_count(), 24)
+  assert_eq(@moonloom.multicodec_count(), 35)
 }

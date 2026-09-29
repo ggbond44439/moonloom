@@ -14,7 +14,7 @@ test "CLI parses global options and known commands" {
 test "CLI defaults to help and supports explicit version" {
   assert_eq(@cli.run([]).exit_code, 0)
   assert_true(@cli.run([]).stdout.has_prefix("MoonLoom"))
-  assert_eq(@cli.run(["version"]).stdout, "moonloom 0.1.5")
+  assert_eq(@cli.run(["version"]).stdout, "moonloom 0.1.6")
 }
 
 ///|
@@ -213,4 +213,22 @@ test "CLI exposes SHA-3 and BLAKE3 algorithms" {
     ),
   )
   assert_eq(@cli.run(["cid", "verify", cid.stdout, "abc"]).stdout, "match")
+}
+
+///|
+test "Multiaddr CLI supports extended transports" {
+  assert_eq(
+    @cli.run(["multiaddr", "parse", "/unix/tmp/moonloom.sock"]).stdout,
+    "/unix/tmp/moonloom.sock",
+  )
+  assert_eq(
+    @cli.run([
+      "multiaddr", "encode", "/ip4/127.0.0.1/udp/443/quic-v1/webtransport",
+    ]).stdout,
+    "047f000001910201bbcd03d103",
+  )
+  assert_eq(
+    @cli.run(["multiaddr", "parse", "/sni/example.com/tls"]).stdout,
+    "/sni/example.com/tls",
+  )
 }

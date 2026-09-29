@@ -14,6 +14,17 @@ pub(all) enum Protocol {
   Https
   Ws
   Wss
+  WebrtcDirect
+  Webrtc
+  P2pCircuit
+  Unix
+  Tls
+  Sni
+  Noise
+  Quic
+  QuicV1
+  Webtransport
+  CertHash
   Unknown(UInt64)
 } derive(Eq, @debug.Debug)
 
@@ -25,6 +36,8 @@ pub(all) enum ProtocolValueKind {
   Domain
   Port
   PeerId
+  Path
+  Multihash
   Text
   Raw
 } derive(Eq, @debug.Debug)
@@ -165,9 +178,26 @@ pub(all) enum ProtocolValue {
   Domain(String)
   Port(Int)
   PeerId(String)
+  Path(String)
+  Multihash(Multihash)
   Text(String)
   Raw(Bytes)
 } derive(Eq, @debug.Debug)
+
+///|
+fn validate_unix_path(path : StringView) -> Result[Unit, MoonLoomError] {
+  if path.length() < 2 || !path.has_prefix("/") {
+    return Err(InvalidProtocolValue("unix"))
+  }
+  let mut last = 0
+  for code_unit in path.code_units() {
+    last = code_unit.to_int()
+  }
+  if last == 47 {
+    return Err(InvalidProtocolValue("unix"))
+  }
+  Ok(())
+}
 
 ///|
 /// A typed protocol/value pair.
@@ -185,6 +215,8 @@ pub fn ProtocolValue::kind(self : ProtocolValue) -> ProtocolValueKind {
     Domain(_) => Domain
     Port(_) => Port
     PeerId(_) => PeerId
+    Path(_) => Path
+    Multihash(_) => Multihash
     Text(_) => Text
     Raw(_) => Raw
   }
@@ -210,6 +242,11 @@ pub fn PathSegment::new(
         Err(InvalidProtocolValue(protocol.diagnostic_name()))
       } else {
         Ok({ protocol, value, })
+      }
+    Path(path) =>
+      match validate_unix_path(path) {
+        Ok(_) => Ok({ protocol, value, })
+        Err(err) => Err(err)
       }
     _ => Ok({ protocol, value, })
   }
@@ -442,6 +479,7 @@ fn validate_ascii_value(
 fn parse_protocol_value(
   protocol : Protocol,
   input : StringView,
+  limits : Limits,
 ) -> Result[ProtocolValue, MoonLoomError] {
   match protocol {
     Ip4 =>
@@ -454,7 +492,7 @@ fn parse_protocol_value(
         Ok(value) => Ok(ProtocolValue::Ipv6(value))
         Err(err) => Err(err)
       }
-    Dns | Dns4 | Dns6 | Dnsaddr =>
+    Dns | Dns4 | Dns6 | Dnsaddr | Sni =>
       match validate_ascii_value(input, protocol.diagnostic_name()) {
         Ok(value) => Ok(ProtocolValue::Domain(value))
         Err(err) => Err(err)
@@ -469,9 +507,29 @@ fn parse_protocol_value(
         Ok(value) => Ok(ProtocolValue::PeerId(value))
         Err(err) => Err(err)
       }
+    Unix =>
+      match validate_unix_path(input) {
+        Ok(_) => Ok(ProtocolValue::Path(input.to_owned()))
+        Err(err) => Err(err)
+      }
+    CertHash =>
+      match Multihash::from_text(input, limits) {
+        Ok(value) => Ok(ProtocolValue::Multihash(value))
+        Err(_) => Err(InvalidProtocolValue("certhash"))
+      }
     Unknown(_) => Ok(ProtocolValue::Text(input.to_owned()))
-    Http | Https | Ws | Wss =>
-      Err(InvalidProtocolValue(protocol.diagnostic_name()))
+    Http
+    | Https
+    | Ws
+    | Wss
+    | WebrtcDirect
+    | Webrtc
+    | P2pCircuit
+    | Tls
+    | Noise
+    | Quic
+    | QuicV1
+    | Webtransport => Err(InvalidProtocolValue(protocol.diagnostic_name()))
   }
 }
 
@@ -510,11 +568,27 @@ pub fn Multiaddr::parse(
     index += 1
     let value = if protocol.expected_value_kind() == Empty {
       ProtocolValue::Empty
+    } else if protocol == Unix {
+      if index >= parts.length() {
+        return Err(Truncated("multiaddr value", index))
+      }
+      let path = StringBuilder()
+      while index < parts.length() {
+        path.write_char('/')
+        path.write_string(parts[index].to_owned())
+        index += 1
+      }
+      let parsed = match
+        parse_protocol_value(protocol, path.to_string(), limits) {
+        Ok(value) => value
+        Err(err) => return Err(err)
+      }
+      parsed
     } else {
       if index >= parts.length() || parts[index].length() == 0 {
         return Err(Truncated("multiaddr value", index))
       }
-      let parsed = match parse_protocol_value(protocol, parts[index]) {
+      let parsed = match parse_protocol_value(protocol, parts[index], limits) {
         Ok(value) => value
         Err(err) => return Err(err)
       }
@@ -529,8 +603,6 @@ pub fn Multiaddr::parse(
   }
   Multiaddr::from_segments(segments, limits)
 }
-
-///|
 
 ///|
 pub fn Multiaddr::to_bytes(
@@ -562,6 +634,8 @@ pub fn Multiaddr::to_bytes(
           Ok(bytes) => writer.write_length_prefixed(bytes)
           Err(_) => return Err(InvalidProtocolValue("p2p"))
         }
+      Path(value) => writer.write_length_prefixed(@utf8.encode(value[:]))
+      Multihash(value) => writer.write_length_prefixed(value.encode())
       Text(_) | Raw(_) =>
         return Err(InvalidProtocolValue(protocol.diagnostic_name()))
     }
@@ -587,7 +661,11 @@ pub fn Multiaddr::parse_bytes(
     Err(err) => return Err(err)
   }
   let segments : Array[PathSegment] = []
+  let mut saw_path = false
   while !reader.is_done() {
+    if saw_path {
+      return Err(InvalidProtocolValue("path component must be terminal"))
+    }
     let code = match reader.read_varint("multiaddr protocol") {
       Ok(value) => value
       Err(err) => return Err(err)
@@ -643,11 +721,42 @@ pub fn Multiaddr::parse_bytes(
         }
         ProtocolValue::PeerId(encode_base58(bytes))
       }
+      Path => {
+        let bytes = match reader.read_length_prefixed("unix") {
+          Ok(value) => value
+          Err(err) => return Err(err)
+        }
+        let decoded = @utf8.decode(bytes) catch {
+          _ => return Err(InvalidProtocolValue("unix"))
+        }
+        match validate_unix_path(decoded) {
+          Ok(_) => ProtocolValue::Path(decoded)
+          Err(err) => return Err(err)
+        }
+      }
+      Multihash => {
+        let bytes = match reader.read_length_prefixed("certhash") {
+          Ok(value) => value
+          Err(err) => return Err(err)
+        }
+        match Multihash::decode(bytes, limits) {
+          Ok((value, consumed)) =>
+            if consumed == bytes.length() {
+              ProtocolValue::Multihash(value)
+            } else {
+              return Err(InvalidProtocolValue("certhash"))
+            }
+          Err(err) => return Err(err)
+        }
+      }
       Text | Raw => return Err(InvalidProtocolValue(protocol.diagnostic_name()))
     }
     let segment = match PathSegment::new(protocol, value) {
       Ok(value) => value
       Err(err) => return Err(err)
+    }
+    if protocol.expected_value_kind() == Path {
+      saw_path = true
     }
     segments.push(segment)
   }
@@ -742,7 +851,13 @@ fn render_segment(segment : PathSegment) -> Result[String, MoonLoomError] {
         Ipv4(address) => "/" + address.to_text()
         Ipv6(address) => "/" + address.to_text()
         Domain(value) | PeerId(value) => "/" + value
+        Path(value) => value
         Port(value) => "/" + value.to_string()
+        Multihash(value) =>
+          match value.to_text(Base64Url) {
+            Ok(text) => "/" + text
+            Err(err) => return Err(err)
+          }
         Text(_) | Raw(_) =>
           return Err(InvalidProtocolValue(protocol.diagnostic_name()))
       }

@@ -124,7 +124,7 @@ test "Multiaddr length is bounded before segment accumulation" {
 
 ///|
 test "protocol metadata is driven by the shared registry" {
-  assert_eq(@moonloom.protocol_table().length(), 13)
+  assert_eq(@moonloom.protocol_table().length(), 24)
   for info in @moonloom.protocol_table() {
     assert_eq(info.protocol.code(), info.code)
     assert_eq(info.protocol.name(), Some(info.name))
@@ -444,4 +444,83 @@ test "empty and unknown Multiaddr text output is explicit" {
     Err(err) => fail(err.to_string())
   }
   assert_eq(value.to_text(), Err(@moonloom.UnknownProtocol("protocol-9999")))
+}
+
+///|
+test "extended transport protocols round trip through text and binary" {
+  let limits = @moonloom.Limits::default()
+  let values = [
+    "/webrtc-direct", "/webrtc", "/p2p-circuit", "/unix/tmp/moonloom.sock", "/tls",
+    "/sni/example.com/tls", "/noise", "/quic", "/quic-v1", "/webtransport", "/ip4/127.0.0.1/udp/443/quic-v1/webtransport",
+  ]
+  for text in values {
+    let parsed = match @moonloom.Multiaddr::parse(text, limits) {
+      Ok(value) => value
+      Err(err) => fail(text + ": " + err.to_string())
+    }
+    assert_eq(parsed.to_text(), Ok(text))
+    let bytes = match parsed.to_bytes(limits) {
+      Ok(value) => value
+      Err(err) => fail(text + ": " + err.to_string())
+    }
+    assert_eq(@moonloom.Multiaddr::parse_bytes(bytes, limits), Ok(parsed))
+  }
+  let quic = match @moonloom.Multiaddr::parse("/quic-v1", limits) {
+    Ok(value) => value
+    Err(err) => fail(err.to_string())
+  }
+  assert_eq(quic.to_bytes(limits), Ok(b"\xcd\x03"))
+}
+
+///|
+test "certhash uses canonical multibase and strict multihash bytes" {
+  let limits = @moonloom.Limits::default()
+  let certificate = match
+    @moonloom.Multihash::identity(b"certificate", limits) {
+    Ok(value) => value
+    Err(err) => fail(err.to_string())
+  }
+  let encoded = match certificate.to_text(@moonloom.Base64Url) {
+    Ok(value) => value
+    Err(err) => fail(err.to_string())
+  }
+  let text = "/certhash/" + encoded
+  let parsed = match @moonloom.Multiaddr::parse(text, limits) {
+    Ok(value) => value
+    Err(err) => fail(err.to_string())
+  }
+  assert_eq(parsed.to_text(), Ok(text))
+  let bytes = match parsed.to_bytes(limits) {
+    Ok(value) => value
+    Err(err) => fail(err.to_string())
+  }
+  assert_eq(@moonloom.Multiaddr::parse_bytes(bytes, limits), Ok(parsed))
+  assert_eq(
+    @moonloom.Multiaddr::parse("/certhash/not-a-multihash", limits),
+    Err(@moonloom.InvalidProtocolValue("certhash")),
+  )
+}
+
+///|
+test "unix paths are validated and terminal in binary form" {
+  let limits = @moonloom.Limits::default()
+  assert_eq(
+    @moonloom.Multiaddr::parse("/unix/tmp/", limits),
+    Err(@moonloom.InvalidProtocolValue("unix")),
+  )
+  let unix = match
+    @moonloom.Multiaddr::parse("/unix/tmp/moonloom.sock", limits) {
+    Ok(value) => value
+    Err(err) => fail(err.to_string())
+  }
+  let bytes = match unix.to_bytes(limits) {
+    Ok(value) => value
+    Err(err) => fail(err.to_string())
+  }
+  assert_eq(bytes, b"\x90\x03\x12/tmp/moonloom.sock")
+  let with_tcp = b"\x90\x03\x12/tmp/moonloom.sock\x06\x00\x50"
+  assert_eq(
+    @moonloom.Multiaddr::parse_bytes(with_tcp, limits),
+    Err(@moonloom.InvalidProtocolValue("path component must be terminal")),
+  )
 }

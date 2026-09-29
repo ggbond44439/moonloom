@@ -280,6 +280,17 @@ pub(all) enum Protocol {
   Https
   Ws
   Wss
+  WebrtcDirect
+  Webrtc
+  P2pCircuit
+  Unix
+  Tls
+  Sni
+  Noise
+  Quic
+  QuicV1
+  Webtransport
+  CertHash
   Unknown(UInt64)
 } derive(Eq, @debug.Debug)
 pub fn Protocol::accepts_value(Self, ProtocolValue) -> Bool
@@ -310,6 +321,8 @@ pub(all) enum ProtocolValue {
   Domain(String)
   Port(Int)
   PeerId(String)
+  Path(String)
+  Multihash(Multihash)
   Text(String)
   Raw(Bytes)
 } derive(Eq, @debug.Debug)
@@ -325,6 +338,8 @@ pub(all) enum ProtocolValueKind {
   Domain
   Port
   PeerId
+  Path
+  Multihash
   Text
   Raw
 } derive(Eq, @debug.Debug)

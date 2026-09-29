@@ -21,7 +21,8 @@ input, and preserving interoperability with the Multiformats ecosystem.
 - Multihash with `identity`, `sha2-256`, `sha2-512`, `sha3-256`, `sha3-512`, and `blake3`.
 - CIDv0 and CIDv1 creation, parsing, canonical text, and verification.
 - Typed Multiaddr model, strict text parser, binary codec, and RFC 5952 IPv6
-  canonical text.
+  canonical text, including WebRTC, p2p-circuit, unix, TLS/SNI/noise, QUIC,
+  WebTransport, and certhash.
 - Reusable bounded `WireReader` and `WireWriter` primitives.
 - Typed errors, byte offsets, and configurable resource limits.
 - Multibase, Multihash, CID, and Multiaddr CLI commands, including strict text, Base64, and Hex content input.
@@ -30,7 +31,7 @@ input, and preserving interoperability with the Multiformats ecosystem.
 ## Install
 
 ```text
-moon add ggbond44439/moonloom@0.1.5
+moon add ggbond44439/moonloom@0.1.6
 ```
 
 In another MoonBit package:
@@ -142,7 +143,7 @@ moon package --list
 
 ## Status
 
-MoonLoom `0.1.5` is the format-core release for the 2026 September MoonBit
+MoonLoom `0.1.6` is the format-core release for the 2026 September MoonBit
 Hackathon. The library, CLI, examples, interoperability vectors, and CI matrix
 are complete for the scoped formats.
 

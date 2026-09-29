@@ -98,3 +98,46 @@ test "multihash rejects malformed lengths and trailing bytes" {
     Err(err) => assert_eq(err, @moonloom.InvalidMultihash("trailing bytes", 3))
   }
 }
+
+///|
+test "builtin provider matches SHA-3 and BLAKE3 vectors" {
+  let provider = @moonloom.builtin_hash_provider()
+  let sha3_256 = match provider.hash(@moonloom.Sha3_256, b"abc") {
+    Ok(value) => value
+    Err(err) => fail(err.to_string())
+  }
+  let sha3_512 = match provider.hash(@moonloom.Sha3_512, b"abc") {
+    Ok(value) => value
+    Err(err) => fail(err.to_string())
+  }
+  let blake3 = match provider.hash(@moonloom.Blake3, b"abc") {
+    Ok(value) => value
+    Err(err) => fail(err.to_string())
+  }
+  assert_eq(
+    @moonloom.multibase_encode(@moonloom.Base16, sha3_256),
+    Ok("f3a985da74fe225b2045c172d6bd390bd855f086e3e9d525b46bfe24511431532"),
+  )
+  assert_eq(
+    @moonloom.multibase_encode(@moonloom.Base16, sha3_512),
+    Ok(
+      "fb751850b1a57168a5693cd924b6b096e08f621827444f70d884f5d0240d2712e10e116e9192af3c91a7ec57647e3934057340b4cf408d5a56592f8274eec53f0",
+    ),
+  )
+  assert_eq(
+    @moonloom.multibase_encode(@moonloom.Base16, blake3),
+    Ok("f6437b3ac38465133ffb63b75273a8db548c558465d79db03fd359c6cd5bd9d85"),
+  )
+}
+
+///|
+test "extended algorithms carry canonical multicodec identifiers" {
+  assert_eq(@moonloom.Sha3_256.code(), 22UL)
+  assert_eq(@moonloom.Sha3_512.code(), 20UL)
+  assert_eq(@moonloom.Blake3.code(), 30UL)
+  assert_eq(
+    @moonloom.HashAlgorithm::from_name("sha3-256"),
+    Some(@moonloom.Sha3_256),
+  )
+  assert_eq(@moonloom.HashAlgorithm::from_code(30UL), Some(@moonloom.Blake3))
+}

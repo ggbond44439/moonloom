@@ -2,7 +2,7 @@
 fn multihash_help() -> String {
   (
     $|Usage:
-    $|  moonloom multihash digest [--algorithm sha2-256|sha2-512] [--data-format text|base64|hex] <data>
+    $|  moonloom multihash digest [--algorithm sha2-256|sha2-512|sha3-256|sha3-512|blake3] [--data-format text|base64|hex] <data>
     $|  moonloom multihash inspect <multibase-multihash>
     $|  moonloom multihash verify [--data-format text|base64|hex] <multibase-multihash> <data>
   )
@@ -22,7 +22,7 @@ fn multihash_digest(
     Some(value) => value
     None => return Err(@moonloom.UnsupportedHashAlgorithm(algorithm_name))
   }
-  let provider = @moonloom.sha2_provider()
+  let provider = @moonloom.builtin_hash_provider()
   match provider.hash(algorithm, data) {
     Ok(digest) =>
       @moonloom.Multihash::create(
@@ -144,7 +144,11 @@ fn run_multihash_verify(args : ArrayView[String], json : Bool) -> CliResult {
     Err(err) => return CliResult::failure(2, "moonloom: \{err.to_string()}")
   }
   match
-    value.verify(data, @moonloom.sha2_provider(), @moonloom.Limits::default()) {
+    value.verify(
+      data,
+      @moonloom.builtin_hash_provider(),
+      @moonloom.Limits::default(),
+    ) {
     Ok(_) =>
       if json {
         CliResult::success("{\"match\":" + json_bool(true) + "}")

@@ -14,7 +14,7 @@ test "base names round trip through the public registry" {
 ///|
 test "hash algorithm names round trip through the public registry" {
   let algorithms = @moonloom.supported_hash_algorithms()
-  assert_eq(algorithms.length(), 3)
+  assert_eq(algorithms.length(), 6)
   for algorithm in algorithms {
     match @moonloom.HashAlgorithm::from_name(algorithm.name()) {
       Some(decoded) => assert_eq(decoded, algorithm)

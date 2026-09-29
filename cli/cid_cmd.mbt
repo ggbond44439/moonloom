@@ -67,7 +67,7 @@ fn run_cid_encode(args : ArrayView[String], json : Bool) -> CliResult {
         "moonloom: \{InvalidValue("--algorithm", algorithm_name).to_string()}",
       )
   }
-  let provider = @moonloom.sha2_provider()
+  let provider = @moonloom.builtin_hash_provider()
   let cid = match version {
     "0" =>
       if codec_name != "dag-pb" {
@@ -185,7 +185,11 @@ fn run_cid_verify(args : ArrayView[String], json : Bool) -> CliResult {
     Err(err) => return CliResult::failure(2, "moonloom: \{err.to_string()}")
   }
   match
-    value.verify(data, @moonloom.sha2_provider(), @moonloom.Limits::default()) {
+    value.verify(
+      data,
+      @moonloom.builtin_hash_provider(),
+      @moonloom.Limits::default(),
+    ) {
     Ok(_) =>
       if json {
         CliResult::success("{\"match\":" + json_bool(true) + "}")

@@ -14,7 +14,7 @@ test "CLI parses global options and known commands" {
 test "CLI defaults to help and supports explicit version" {
   assert_eq(@cli.run([]).exit_code, 0)
   assert_true(@cli.run([]).stdout.has_prefix("MoonLoom"))
-  assert_eq(@cli.run(["version"]).stdout, "moonloom 0.1.4")
+  assert_eq(@cli.run(["version"]).stdout, "moonloom 0.1.5")
 }
 
 ///|
@@ -175,4 +175,42 @@ test "CLI content formats preserve canonical results" {
     @cli.run(["cid", "encode", "--data-format", "base64", "not-base64!"]).exit_code,
     2,
   )
+}
+
+///|
+test "CLI exposes SHA-3 and BLAKE3 algorithms" {
+  let sha3 = @cli.run(["multihash", "digest", "--algorithm", "sha3-256", "abc"])
+  assert_eq(sha3.exit_code, 0)
+  let sha3_json = @cli.run(["multihash", "inspect", "--json", sha3.stdout])
+  assert_true(sha3_json.stdout.contains("\"code\":22"))
+  assert_true(sha3_json.stdout.contains("\"algorithm\":\"sha3-256\""))
+  assert_eq(
+    @cli.run(["multihash", "verify", sha3.stdout, "abc"]).stdout,
+    "match",
+  )
+
+  let sha3_512 = @cli.run([
+    "multihash", "digest", "--algorithm", "sha3-512", "abc",
+  ])
+  assert_true(
+    @cli.run(["multihash", "inspect", "--json", sha3_512.stdout]).stdout.contains(
+      "\"code\":20",
+    ),
+  )
+
+  let blake3 = @cli.run(["multihash", "digest", "--algorithm", "blake3", "abc"])
+  assert_true(
+    @cli.run(["multihash", "inspect", "--json", blake3.stdout]).stdout.contains(
+      "\"code\":30",
+    ),
+  )
+
+  let cid = @cli.run(["cid", "encode", "--algorithm", "sha3-256", "abc"])
+  assert_eq(cid.exit_code, 0)
+  assert_true(
+    @cli.run(["cid", "decode", cid.stdout]).stdout.contains(
+      "hash_algorithm: sha3-256",
+    ),
+  )
+  assert_eq(@cli.run(["cid", "verify", cid.stdout, "abc"]).stdout, "match")
 }

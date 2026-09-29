@@ -18,7 +18,7 @@ input, and preserving interoperability with the Multiformats ecosystem.
 - Canonical unsigned varint encoding and strict decoding.
 - Multibase for base16, base32, base58btc, base64, and URL-safe base64.
 - One registry for CID, hash, content format, and Multiaddr protocol metadata.
-- Multihash with `identity`, `sha2-256`, and `sha2-512`.
+- Multihash with `identity`, `sha2-256`, `sha2-512`, `sha3-256`, `sha3-512`, and `blake3`.
 - CIDv0 and CIDv1 creation, parsing, canonical text, and verification.
 - Typed Multiaddr model, strict text parser, binary codec, and RFC 5952 IPv6
   canonical text.
@@ -30,7 +30,7 @@ input, and preserving interoperability with the Multiformats ecosystem.
 ## Install
 
 ```text
-moon add ggbond44439/moonloom@0.1.4
+moon add ggbond44439/moonloom@0.1.5
 ```
 
 In another MoonBit package:
@@ -78,7 +78,7 @@ moonloom version
 moonloom multibase encode [--base <name>] <text>
 moonloom multibase decode <multibase-text>
 
-moonloom multihash digest [--algorithm sha2-256|sha2-512] [--data-format text|base64|hex] <data>
+moonloom multihash digest [--algorithm sha2-256|sha2-512|sha3-256|sha3-512|blake3] [--data-format text|base64|hex] <data>
 moonloom multihash inspect <multibase-multihash>
 moonloom multihash verify [--data-format text|base64|hex] <multibase-multihash> <data>
 
@@ -129,6 +129,7 @@ scope. MoonLoom is an extension and composition layer, not a competing encoder.
 - Multiformats Multibase, Multicodec, Multihash, CID, and Multiaddr
 - RFC 5952 IPv6 canonical text
 - SHA-2 through the Apache-2.0 MoonCrypt package
+- SHA-3 and BLAKE3 through the Apache-2.0 Mooncry package
 
 ## Build and test
 
@@ -141,7 +142,7 @@ moon package --list
 
 ## Status
 
-MoonLoom `0.1.4` is the format-core release for the 2026 September MoonBit
+MoonLoom `0.1.5` is the format-core release for the 2026 September MoonBit
 Hackathon. The library, CLI, examples, interoperability vectors, and CI matrix
 are complete for the scoped formats.
 

@@ -4,6 +4,9 @@ pub(all) enum HashAlgorithm {
   Identity
   Sha2_256
   Sha2_512
+  Sha3_256
+  Sha3_512
+  Blake3
 } derive(Eq, @debug.Debug)
 
 ///|
@@ -12,6 +15,9 @@ pub fn HashAlgorithm::name(self : HashAlgorithm) -> String {
     Identity => "identity"
     Sha2_256 => "sha2-256"
     Sha2_512 => "sha2-512"
+    Sha3_256 => "sha3-256"
+    Sha3_512 => "sha3-512"
+    Blake3 => "blake3"
   }
 }
 
@@ -21,6 +27,9 @@ pub fn HashAlgorithm::code(self : HashAlgorithm) -> UInt64 {
     Identity => 0UL
     Sha2_256 => 18UL
     Sha2_512 => 19UL
+    Sha3_256 => 22UL
+    Sha3_512 => 20UL
+    Blake3 => 30UL
   }
 }
 
@@ -30,6 +39,9 @@ pub fn HashAlgorithm::from_code(code : UInt64) -> HashAlgorithm? {
     0UL => Some(Identity)
     18UL => Some(Sha2_256)
     19UL => Some(Sha2_512)
+    22UL => Some(Sha3_256)
+    20UL => Some(Sha3_512)
+    30UL => Some(Blake3)
     _ => None
   }
 }
@@ -40,13 +52,16 @@ pub fn HashAlgorithm::from_name(name : StringView) -> HashAlgorithm? {
     "identity" => Some(Identity)
     "sha2-256" => Some(Sha2_256)
     "sha2-512" => Some(Sha2_512)
+    "sha3-256" => Some(Sha3_256)
+    "sha3-512" => Some(Sha3_512)
+    "blake3" => Some(Blake3)
     _ => None
   }
 }
 
 ///|
 pub fn supported_hash_algorithms() -> Array[HashAlgorithm] {
-  [Identity, Sha2_256, Sha2_512]
+  [Identity, Sha2_256, Sha2_512, Sha3_256, Sha3_512, Blake3]
 }
 
 ///|
@@ -55,6 +70,9 @@ pub fn HashAlgorithm::expected_digest_size(self : HashAlgorithm) -> Int? {
     Identity => None
     Sha2_256 => Some(32)
     Sha2_512 => Some(64)
+    Sha3_256 => Some(32)
+    Sha3_512 => Some(64)
+    Blake3 => Some(32)
   }
 }
 
@@ -87,8 +105,45 @@ pub fn sha2_provider() -> HashProvider {
     match algorithm {
       Sha2_256 => Ok(@sha2.hash(data, kind=@sha2.Kind::Sha256))
       Sha2_512 => Ok(@sha2.hash(data, kind=@sha2.Kind::Sha512))
-      Identity =>
-        Err(UnsupportedHashAlgorithm("identity is not a cryptographic hash"))
+      _ => Err(UnsupportedHashAlgorithm(algorithm.name()))
+    }
+  })
+}
+
+///|
+/// FIPS 202 SHA-3 provider backed by Mooncry.
+pub fn sha3_provider() -> HashProvider {
+  HashProvider::new(fn(algorithm, data) {
+    match algorithm {
+      Sha3_256 => Ok(@lib.sha3_256(data.to_owned()))
+      Sha3_512 => Ok(@lib.sha3_512(data.to_owned()))
+      _ => Err(UnsupportedHashAlgorithm(algorithm.name()))
+    }
+  })
+}
+
+///|
+/// BLAKE3 provider backed by Mooncry.
+pub fn blake3_provider() -> HashProvider {
+  HashProvider::new(fn(algorithm, data) {
+    match algorithm {
+      Blake3 => Ok(@lib.blake3(data.to_owned()))
+      _ => Err(UnsupportedHashAlgorithm(algorithm.name()))
+    }
+  })
+}
+
+///|
+/// Provider for every cryptographic algorithm bundled with MoonLoom.
+pub fn builtin_hash_provider() -> HashProvider {
+  HashProvider::new(fn(algorithm, data) {
+    match algorithm {
+      Sha2_256 => Ok(@sha2.hash(data, kind=@sha2.Kind::Sha256))
+      Sha2_512 => Ok(@sha2.hash(data, kind=@sha2.Kind::Sha512))
+      Sha3_256 => Ok(@lib.sha3_256(data.to_owned()))
+      Sha3_512 => Ok(@lib.sha3_512(data.to_owned()))
+      Blake3 => Ok(@lib.blake3(data.to_owned()))
+      Identity => Err(UnsupportedHashAlgorithm(algorithm.name()))
     }
   })
 }

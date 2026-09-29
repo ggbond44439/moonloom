@@ -14,7 +14,7 @@ test "CLI parses global options and known commands" {
 test "CLI defaults to help and supports explicit version" {
   assert_eq(@cli.run([]).exit_code, 0)
   assert_true(@cli.run([]).stdout.has_prefix("MoonLoom"))
-  assert_eq(@cli.run(["version"]).stdout, "moonloom 0.1.0")
+  assert_eq(@cli.run(["version"]).stdout, "moonloom 0.1.3")
 }
 
 ///|

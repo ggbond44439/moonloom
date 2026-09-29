@@ -30,7 +30,7 @@ input, and preserving interoperability with the Multiformats ecosystem.
 ## Install
 
 ```text
-moon add ggbond44439/moonloom@0.1.2
+moon add ggbond44439/moonloom@0.1.3
 ```
 
 In another MoonBit package:
@@ -141,7 +141,7 @@ moon package --list
 
 ## Status
 
-MoonLoom `0.1.2` is the format-core release for the 2026 September MoonBit
+MoonLoom `0.1.3` is the format-core release for the 2026 September MoonBit
 Hackathon. The library, CLI, examples, interoperability vectors, and CI matrix
 are complete for the scoped formats.
 

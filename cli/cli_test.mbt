@@ -14,7 +14,7 @@ test "CLI parses global options and known commands" {
 test "CLI defaults to help and supports explicit version" {
   assert_eq(@cli.run([]).exit_code, 0)
   assert_true(@cli.run([]).stdout.has_prefix("MoonLoom"))
-  assert_eq(@cli.run(["version"]).stdout, "moonloom 0.1.3")
+  assert_eq(@cli.run(["version"]).stdout, "moonloom 0.1.4")
 }
 
 ///|
@@ -133,5 +133,46 @@ test "CID CLI emits structured results and verifies content" {
   assert_eq(
     @cli.run(["cid", "verify", "--json", cid, "world"]).stdout,
     "{\"match\":false}",
+  )
+}
+
+///|
+test "CLI content formats preserve canonical results" {
+  let digest_text = @cli.run(["multihash", "digest", "hello"]).stdout
+  assert_eq(
+    @cli.run(["multihash", "digest", "--data-format", "base64", "aGVsbG8="]).stdout,
+    digest_text,
+  )
+  assert_eq(
+    @cli.run(["multihash", "digest", "--data-format", "hex", "68656c6c6f"]).stdout,
+    digest_text,
+  )
+  assert_eq(
+    @cli.run([
+      "multihash", "verify", "--data-format", "base64", digest_text, "aGVsbG8=",
+    ]).stdout,
+    "match",
+  )
+
+  let cid_text = @cli.run(["cid", "encode", "hello"]).stdout
+  assert_eq(
+    @cli.run(["cid", "encode", "--data-format", "base64", "aGVsbG8="]).stdout,
+    cid_text,
+  )
+  assert_eq(
+    @cli.run(["cid", "encode", "--data-format", "hex", "68656c6c6f"]).stdout,
+    cid_text,
+  )
+  assert_eq(
+    @cli.run(["cid", "verify", "--data-format", "base64", cid_text, "aGVsbG8="]).stdout,
+    "match",
+  )
+  assert_eq(
+    @cli.run(["multihash", "digest", "--data-format", "invalid", "hello"]).exit_code,
+    2,
+  )
+  assert_eq(
+    @cli.run(["cid", "encode", "--data-format", "base64", "not-base64!"]).exit_code,
+    2,
   )
 }

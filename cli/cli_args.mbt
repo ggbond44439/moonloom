@@ -64,3 +64,23 @@ fn require_positional_count(
     Ok(())
   }
 }
+
+///|
+fn content_bytes(value : String, format : String) -> Result[Bytes, CliError] {
+  match format {
+    "text" => Ok(@utf8.encode(value))
+    "base64" => {
+      let bytes = @base64.decode(value, ignore_whitespace=false) catch {
+        _ => return Err(InvalidValue("data", value))
+      }
+      Ok(bytes)
+    }
+    "hex" =>
+      match
+        @moonloom.multibase_decode("f" + value, @moonloom.Limits::default()) {
+        Ok(decoded) => Ok(decoded.data)
+        Err(_) => Err(InvalidValue("data", value))
+      }
+    _ => Err(InvalidValue("--data-format", format))
+  }
+}

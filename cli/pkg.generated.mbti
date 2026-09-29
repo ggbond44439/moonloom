@@ -6,7 +6,7 @@ import {
 }
 
 // Values
-pub const CLI_VERSION : String = "0.1.3"
+pub const CLI_VERSION : String = "0.1.4"
 
 pub fn help_text() -> String
 

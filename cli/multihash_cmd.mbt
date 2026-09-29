@@ -2,9 +2,9 @@
 fn multihash_help() -> String {
   (
     $|Usage:
-    $|  moonloom multihash digest [--algorithm sha2-256|sha2-512] <text>
+    $|  moonloom multihash digest [--algorithm sha2-256|sha2-512] [--data-format text|base64|hex] <data>
     $|  moonloom multihash inspect <multibase-multihash>
-    $|  moonloom multihash verify <multibase-multihash> <text>
+    $|  moonloom multihash verify [--data-format text|base64|hex] <multibase-multihash> <data>
   )
 }
 
@@ -15,7 +15,7 @@ fn multihash_error(err : @moonloom.MoonLoomError) -> CliResult {
 
 ///|
 fn multihash_digest(
-  data : String,
+  data : Bytes,
   algorithm_name : String,
 ) -> Result[@moonloom.Multihash, @moonloom.MoonLoomError] {
   let algorithm = match @moonloom.HashAlgorithm::from_name(algorithm_name) {
@@ -23,7 +23,7 @@ fn multihash_digest(
     None => return Err(@moonloom.UnsupportedHashAlgorithm(algorithm_name))
   }
   let provider = @moonloom.sha2_provider()
-  match provider.hash(algorithm, @utf8.encode(data)) {
+  match provider.hash(algorithm, data) {
     Ok(digest) =>
       @moonloom.Multihash::create(
         algorithm,
@@ -36,7 +36,7 @@ fn multihash_digest(
 
 ///|
 fn run_multihash_digest(args : ArrayView[String], json : Bool) -> CliResult {
-  let parsed = match parse_options(args, ["algorithm"]) {
+  let parsed = match parse_options(args, ["algorithm", "data-format"]) {
     Ok(value) => value
     Err(err) => return CliResult::failure(2, "moonloom: \{err.to_string()}")
   }
@@ -46,7 +46,12 @@ fn run_multihash_digest(args : ArrayView[String], json : Bool) -> CliResult {
     Err(err) => return CliResult::failure(2, "moonloom: \{err.to_string()}")
   }
   let algorithm_name = option_or(parsed.0, "algorithm", "sha2-256")
-  let value = match multihash_digest(positional[0], algorithm_name) {
+  let data_format = option_or(parsed.0, "data-format", "text")
+  let data = match content_bytes(positional[0], data_format) {
+    Ok(value) => value
+    Err(err) => return CliResult::failure(2, "moonloom: \{err.to_string()}")
+  }
+  let value = match multihash_digest(data, algorithm_name) {
     Ok(value) => value
     Err(err) => return multihash_error(err)
   }
@@ -119,7 +124,7 @@ fn run_multihash_inspect(args : ArrayView[String], json : Bool) -> CliResult {
 
 ///|
 fn run_multihash_verify(args : ArrayView[String], json : Bool) -> CliResult {
-  let parsed = match parse_options(args, []) {
+  let parsed = match parse_options(args, ["data-format"]) {
     Ok(value) => value
     Err(err) => return CliResult::failure(2, "moonloom: \{err.to_string()}")
   }
@@ -133,12 +138,13 @@ fn run_multihash_verify(args : ArrayView[String], json : Bool) -> CliResult {
     Ok(value) => value
     Err(err) => return multihash_error(err)
   }
+  let data_format = option_or(parsed.0, "data-format", "text")
+  let data = match content_bytes(positional[1], data_format) {
+    Ok(value) => value
+    Err(err) => return CliResult::failure(2, "moonloom: \{err.to_string()}")
+  }
   match
-    value.verify(
-      @utf8.encode(positional[1]),
-      @moonloom.sha2_provider(),
-      @moonloom.Limits::default(),
-    ) {
+    value.verify(data, @moonloom.sha2_provider(), @moonloom.Limits::default()) {
     Ok(_) =>
       if json {
         CliResult::success("{\"match\":" + json_bool(true) + "}")

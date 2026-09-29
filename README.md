@@ -24,13 +24,13 @@ input, and preserving interoperability with the Multiformats ecosystem.
   canonical text.
 - Reusable bounded `WireReader` and `WireWriter` primitives.
 - Typed errors, byte offsets, and configurable resource limits.
-- Multibase, Multihash, CID, and Multiaddr CLI commands.
+- Multibase, Multihash, CID, and Multiaddr CLI commands, including strict text, Base64, and Hex content input.
 - wasm, wasm-gc, JS, and Native target checking.
 
 ## Install
 
 ```text
-moon add ggbond44439/moonloom@0.1.3
+moon add ggbond44439/moonloom@0.1.4
 ```
 
 In another MoonBit package:
@@ -78,13 +78,13 @@ moonloom version
 moonloom multibase encode [--base <name>] <text>
 moonloom multibase decode <multibase-text>
 
-moonloom multihash digest [--algorithm sha2-256|sha2-512] <text>
+moonloom multihash digest [--algorithm sha2-256|sha2-512] [--data-format text|base64|hex] <data>
 moonloom multihash inspect <multibase-multihash>
-moonloom multihash verify <multibase-multihash> <text>
+moonloom multihash verify [--data-format text|base64|hex] <multibase-multihash> <data>
 
-moonloom cid encode [--version 0|1] [--codec <name>] [--algorithm <name>] <text>
+moonloom cid encode [--version 0|1] [--codec <name>] [--algorithm <name>] [--data-format text|base64|hex] <data>
 moonloom cid decode <cid>
-moonloom cid verify <cid> <text>
+moonloom cid verify [--data-format text|base64|hex] <cid> <data>
 
 moonloom multiaddr parse <text>
 moonloom multiaddr encode <text>
@@ -141,7 +141,7 @@ moon package --list
 
 ## Status
 
-MoonLoom `0.1.3` is the format-core release for the 2026 September MoonBit
+MoonLoom `0.1.4` is the format-core release for the 2026 September MoonBit
 Hackathon. The library, CLI, examples, interoperability vectors, and CI matrix
 are complete for the scoped formats.
 

@@ -2,9 +2,9 @@
 fn cid_help() -> String {
   (
     $|Usage:
-    $|  moonloom cid encode [--version 0|1] [--codec <name>] [--algorithm <name>] <text>
+    $|  moonloom cid encode [--version 0|1] [--codec <name>] [--algorithm <name>] [--data-format text|base64|hex] <data>
     $|  moonloom cid decode <cid>
-    $|  moonloom cid verify <cid> <text>
+    $|  moonloom cid verify [--data-format text|base64|hex] <cid> <data>
     $|
     $|Defaults:
     $|  version=1, codec=raw, algorithm=sha2-256
@@ -41,7 +41,8 @@ fn cid_json(
 
 ///|
 fn run_cid_encode(args : ArrayView[String], json : Bool) -> CliResult {
-  let parsed = match parse_options(args, ["version", "codec", "algorithm"]) {
+  let parsed = match
+    parse_options(args, ["version", "codec", "algorithm", "data-format"]) {
     Ok(value) => value
     Err(err) => return CliResult::failure(2, "moonloom: \{err.to_string()}")
   }
@@ -53,6 +54,11 @@ fn run_cid_encode(args : ArrayView[String], json : Bool) -> CliResult {
   let version = option_or(parsed.0, "version", "1")
   let codec_name = option_or(parsed.0, "codec", "raw")
   let algorithm_name = option_or(parsed.0, "algorithm", "sha2-256")
+  let data_format = option_or(parsed.0, "data-format", "text")
+  let data = match content_bytes(positional[0], data_format) {
+    Ok(value) => value
+    Err(err) => return CliResult::failure(2, "moonloom: \{err.to_string()}")
+  }
   let algorithm = match @moonloom.HashAlgorithm::from_name(algorithm_name) {
     Some(value) => value
     None =>
@@ -72,7 +78,7 @@ fn run_cid_encode(args : ArrayView[String], json : Bool) -> CliResult {
       } else {
         match
           @moonloom.cid_v0_from_content(
-            @utf8.encode(positional[0]),
+            data,
             provider,
             @moonloom.Limits::default(),
           ) {
@@ -93,7 +99,7 @@ fn run_cid_encode(args : ArrayView[String], json : Bool) -> CliResult {
         @moonloom.cid_from_content(
           codec,
           algorithm,
-          @utf8.encode(positional[0]),
+          data,
           provider,
           @moonloom.Limits::default(),
         ) {
@@ -159,7 +165,7 @@ fn run_cid_decode(args : ArrayView[String], json : Bool) -> CliResult {
 
 ///|
 fn run_cid_verify(args : ArrayView[String], json : Bool) -> CliResult {
-  let parsed = match parse_options(args, []) {
+  let parsed = match parse_options(args, ["data-format"]) {
     Ok(value) => value
     Err(err) => return CliResult::failure(2, "moonloom: \{err.to_string()}")
   }
@@ -173,12 +179,13 @@ fn run_cid_verify(args : ArrayView[String], json : Bool) -> CliResult {
     Ok(value) => value
     Err(err) => return cid_failure(err)
   }
+  let data_format = option_or(parsed.0, "data-format", "text")
+  let data = match content_bytes(positional[1], data_format) {
+    Ok(value) => value
+    Err(err) => return CliResult::failure(2, "moonloom: \{err.to_string()}")
+  }
   match
-    value.verify(
-      @utf8.encode(positional[1]),
-      @moonloom.sha2_provider(),
-      @moonloom.Limits::default(),
-    ) {
+    value.verify(data, @moonloom.sha2_provider(), @moonloom.Limits::default()) {
     Ok(_) =>
       if json {
         CliResult::success("{\"match\":" + json_bool(true) + "}")

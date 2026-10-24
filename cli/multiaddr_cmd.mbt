@@ -13,7 +13,7 @@ fn multiaddr_help() -> String {
 
 ///|
 fn multiaddr_failure(err : @moonloom.MoonLoomError) -> CliResult {
-  CliResult::failure(1, "moonloom: \{err.to_string()}")
+  CliResult::failure(1, err.to_string())
 }
 
 ///|

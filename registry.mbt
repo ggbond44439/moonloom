@@ -157,7 +157,7 @@ pub fn multicodec_code(name : StringView) -> UInt64? {
 }
 
 ///|
-pub fn multicodec_count() -> Int {
+pub fn multicodec_count() -> Int32 {
   codec_table().length()
 }
 

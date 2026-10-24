@@ -13,6 +13,8 @@ pub const CID_VERSION_1 : UInt64 = 1
 
 pub const DAG_PB_CODEC : UInt64 = 112
 
+pub const LIBP2P_KEY_CODEC : UInt64 = 114
+
 pub const RAW_CODEC : UInt64 = 85
 
 pub fn blake3_provider() -> HashProvider
@@ -67,6 +69,8 @@ pub(all) enum Base {
   Base32Upper
   Base32Pad
   Base32PadUpper
+  Base36
+  Base36Upper
   Base58Btc
   Base64
   Base64Pad

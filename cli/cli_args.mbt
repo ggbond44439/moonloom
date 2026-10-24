@@ -53,7 +53,7 @@ fn option_or(
 ///|
 fn require_positional_count(
   positional : Array[String],
-  expected : Int,
+  expected : Int32,
   description : String,
 ) -> Result[Unit, CliError] {
   if positional.length() < expected {

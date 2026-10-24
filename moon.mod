@@ -1,6 +1,6 @@
 name = "ggbond44439/moonloom"
 
-version = "0.1.6"
+version = "0.1.8"
 
 readme = "README.md"
 

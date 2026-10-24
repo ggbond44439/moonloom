@@ -10,7 +10,7 @@ fn multihash_help() -> String {
 
 ///|
 fn multihash_error(err : @moonloom.MoonLoomError) -> CliResult {
-  CliResult::failure(1, "moonloom: \{err.to_string()}")
+  CliResult::failure(1, err.to_string())
 }
 
 ///|

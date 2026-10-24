@@ -14,7 +14,7 @@ test "CLI parses global options and known commands" {
 test "CLI defaults to help and supports explicit version" {
   assert_eq(@cli.run([]).exit_code, 0)
   assert_true(@cli.run([]).stdout.has_prefix("MoonLoom"))
-  assert_eq(@cli.run(["version"]).stdout, "moonloom 0.1.6")
+  assert_eq(@cli.run(["version"]).stdout, "moonloom 0.1.8")
 }
 
 ///|
@@ -63,10 +63,15 @@ test "Multibase CLI encodes, decodes, and emits JSON" {
     "f68656c6c6f",
   )
   assert_eq(
+    @cli.run(["multibase", "encode", "--base", "base36", "hello"]).stdout,
+    "k5pzcszu7",
+  )
+  assert_eq(
     @cli.run(["multibase", "encode", "--json", "hello"]).stdout,
     "{\"base\":\"base32\",\"value\":\"bnbswy3dp\"}",
   )
   assert_eq(@cli.run(["multibase", "decode", "bnbswy3dp"]).stdout, "hello")
+  assert_eq(@cli.run(["multibase", "decode", "k5pzcszu7"]).stdout, "hello")
   assert_eq(
     @cli.run(["multibase", "decode", "--json", "bnbswy3dp"]).stdout,
     "{\"base\":\"base32\",\"data_base64\":\"aGVsbG8=\"}",
@@ -75,6 +80,9 @@ test "Multibase CLI encodes, decodes, and emits JSON" {
     @cli.run(["multibase", "encode", "--base", "invalid", "hello"]).exit_code,
     2,
   )
+  let malformed = @cli.run(["multibase", "decode", "bmz"])
+  assert_eq(malformed.exit_code, 1)
+  assert_eq(malformed.stderr, "moonloom: invalid base32 padding at byte 1")
 }
 
 ///|

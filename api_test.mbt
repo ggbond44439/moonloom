@@ -1,13 +1,15 @@
 ///|
 test "base names round trip through the public registry" {
   let bases = @moonloom.supported_bases()
-  assert_eq(bases.length(), 11)
+  assert_eq(bases.length(), 13)
   for base in bases {
     match @moonloom.Base::from_name(base.name()) {
       Some(decoded) => assert_eq(decoded, base)
       None => fail("missing base name " + base.name())
     }
   }
+  assert_eq(@moonloom.Base::from_prefix('k'), Some(@moonloom.Base36))
+  assert_eq(@moonloom.Base::from_prefix('K'), Some(@moonloom.Base36Upper))
   assert_eq(@moonloom.Base::from_name("base99"), None)
 }
 

@@ -112,10 +112,10 @@ pub struct Ipv4Address {
 
 ///|
 pub fn Ipv4Address::new(
-  a : Int,
-  b : Int,
-  c : Int,
-  d : Int,
+  a : Int32,
+  b : Int32,
+  c : Int32,
+  d : Int32,
 ) -> Result[Ipv4Address, MoonLoomError] {
   if a < 0 || a > 255 {
     return Err(InvalidField("ipv4 octet", a))
@@ -176,7 +176,7 @@ pub(all) enum ProtocolValue {
   Ipv4(Ipv4Address)
   Ipv6(Ipv6Address)
   Domain(String)
-  Port(Int)
+  Port(Int32)
   PeerId(String)
   Path(String)
   Multihash(Multihash)
@@ -291,7 +291,7 @@ pub fn Multiaddr::from_segments(
 }
 
 ///|
-pub fn Multiaddr::length(self : Multiaddr) -> Int {
+pub fn Multiaddr::length(self : Multiaddr) -> Int32 {
   self.segments.length()
 }
 
@@ -301,7 +301,7 @@ pub fn Multiaddr::is_empty(self : Multiaddr) -> Bool {
 }
 
 ///|
-pub fn Multiaddr::get(self : Multiaddr, index : Int) -> PathSegment? {
+pub fn Multiaddr::get(self : Multiaddr, index : Int32) -> PathSegment? {
   if index < 0 || index >= self.segments.length() {
     None
   } else {
@@ -334,7 +334,7 @@ pub fn Multiaddr::push(
 }
 
 ///|
-fn parse_decimal_bounded(input : StringView, maximum : Int) -> Int? {
+fn parse_decimal_bounded(input : StringView, maximum : Int32) -> Int32? {
   if input.length() == 0 {
     return None
   }
@@ -354,7 +354,7 @@ fn parse_decimal_bounded(input : StringView, maximum : Int) -> Int? {
 
 ///|
 fn parse_ipv4_text(input : StringView) -> Result[Ipv4Address, MoonLoomError] {
-  let parts : Array[Int] = []
+  let parts : Array[Int32] = []
   for part in input.split(".") {
     match parse_decimal_bounded(part, 255) {
       Some(value) => parts.push(value)
@@ -368,7 +368,7 @@ fn parse_ipv4_text(input : StringView) -> Result[Ipv4Address, MoonLoomError] {
 }
 
 ///|
-fn parse_hex_group(input : StringView) -> Int? {
+fn parse_hex_group(input : StringView) -> Int32? {
   if input.length() == 0 || input.length() > 4 {
     return None
   }
@@ -392,7 +392,7 @@ fn parse_hex_group(input : StringView) -> Int? {
 ///|
 fn parse_ipv6_side(
   input : StringView,
-  groups : Array[Int],
+  groups : Array[Int32],
 ) -> Result[Unit, MoonLoomError] {
   if input.length() == 0 {
     return Ok(())
@@ -412,7 +412,7 @@ fn parse_ipv6_text(input : StringView) -> Result[Ipv6Address, MoonLoomError] {
   for side in input.split("::") {
     sides.push(side)
   }
-  let groups : Array[Int] = []
+  let groups : Array[Int32] = []
   if sides.length() == 1 {
     match parse_ipv6_side(sides[0], groups) {
       Ok(_) => ()
@@ -426,7 +426,7 @@ fn parse_ipv6_text(input : StringView) -> Result[Ipv6Address, MoonLoomError] {
       Ok(_) => ()
       Err(err) => return Err(err)
     }
-    let right : Array[Int] = []
+    let right : Array[Int32] = []
     match parse_ipv6_side(sides[1], right) {
       Ok(_) => ()
       Err(err) => return Err(err)
@@ -605,6 +605,87 @@ pub fn Multiaddr::parse(
 }
 
 ///|
+fn decode_peer_id_text(
+  value : StringView,
+  limits : Limits,
+) -> Result[Bytes, MoonLoomError] {
+  if value.length() == 0 {
+    return Err(InvalidProtocolValue("p2p"))
+  }
+  let first = match value.get_char(0) {
+    Some(character) => character
+    None => return Err(InvalidProtocolValue("p2p"))
+  }
+  match Base::from_prefix(first) {
+    Some(_) => {
+      let cid = match Cid::parse(value, limits) {
+        Ok(value) => value
+        Err(err) => return Err(err)
+      }
+      if cid.version != CID_VERSION_1 || cid.codec != LIBP2P_KEY_CODEC {
+        return Err(InvalidProtocolValue("p2p"))
+      }
+      Ok(cid.to_bytes())
+    }
+    None => {
+      let bytes = match decode_base58(value) {
+        Ok(value) => value
+        Err(_) => return Err(InvalidProtocolValue("p2p"))
+      }
+      match Cid::decode_bytes(bytes, limits) {
+        Ok(cid) =>
+          if cid.version == CID_VERSION_1 && cid.codec == LIBP2P_KEY_CODEC {
+            return Ok(cid.to_bytes())
+          }
+        Err(_) => ()
+      }
+      match Multihash::decode(bytes, limits) {
+        Ok((_, consumed)) =>
+          if consumed == bytes.length() {
+            Ok(bytes)
+          } else {
+            Err(InvalidProtocolValue("p2p"))
+          }
+        Err(_) => Err(InvalidProtocolValue("p2p"))
+      }
+    }
+  }
+}
+
+///|
+fn encode_peer_id_text(
+  value : BytesView,
+  limits : Limits,
+) -> Result[String, MoonLoomError] {
+  match Cid::decode_bytes(value, limits) {
+    Ok(cid) => {
+      if cid.version == CID_VERSION_1 && cid.codec == LIBP2P_KEY_CODEC {
+        return cid.to_text()
+      }
+      match Multihash::decode(value, limits) {
+        Ok((_, consumed)) =>
+          if consumed == value.length() {
+            Ok(encode_base58(value))
+          } else {
+            Err(InvalidProtocolValue("p2p"))
+          }
+        Err(_) => Err(InvalidProtocolValue("p2p"))
+      }
+    }
+    Err(_) =>
+      match Multihash::decode(value, limits) {
+        Ok((_, consumed)) =>
+          if consumed == value.length() {
+            Ok(encode_base58(value))
+          } else {
+            Err(InvalidProtocolValue("p2p"))
+          }
+        Err(_) => Err(InvalidProtocolValue("p2p"))
+      }
+  }
+}
+
+///|
 pub fn Multiaddr::to_bytes(
   self : Multiaddr,
   limits : Limits,
@@ -629,11 +710,13 @@ pub fn Multiaddr::to_bytes(
         }
         writer.write_u16_be(value)
       }
-      PeerId(value) =>
-        match decode_base58(value[:]) {
-          Ok(bytes) => writer.write_length_prefixed(bytes)
-          Err(_) => return Err(InvalidProtocolValue("p2p"))
+      PeerId(value) => {
+        let bytes = match decode_peer_id_text(value[:], limits) {
+          Ok(value) => value
+          Err(err) => return Err(err)
         }
+        writer.write_length_prefixed(bytes)
+      }
       Path(value) => writer.write_length_prefixed(@utf8.encode(value[:]))
       Multihash(value) => writer.write_length_prefixed(value.encode())
       Text(_) | Raw(_) =>
@@ -719,7 +802,11 @@ pub fn Multiaddr::parse_bytes(
           Ok(value) => value
           Err(err) => return Err(err)
         }
-        ProtocolValue::PeerId(encode_base58(bytes))
+        let text = match encode_peer_id_text(bytes, limits) {
+          Ok(value) => value
+          Err(err) => return Err(err)
+        }
+        ProtocolValue::PeerId(text)
       }
       Path => {
         let bytes = match reader.read_length_prefixed("unix") {
@@ -780,13 +867,13 @@ pub fn Ipv4Address::to_text(self : Ipv4Address) -> String {
 }
 
 ///|
-fn Ipv6Address::group(self : Ipv6Address, index : Int) -> Int {
+fn Ipv6Address::group(self : Ipv6Address, index : Int32) -> Int32 {
   let offset = index * 2
   (self.octets[offset].to_int() << 8) | self.octets[offset + 1].to_int()
 }
 
 ///|
-fn write_ipv6_group(out : StringBuilder, value : Int) -> Unit {
+fn write_ipv6_group(out : StringBuilder, value : Int32) -> Unit {
   let mut started = false
   for shift in [12, 8, 4, 0] {
     let digit = (value >> shift) & 0x0F
@@ -799,7 +886,7 @@ fn write_ipv6_group(out : StringBuilder, value : Int) -> Unit {
 
 ///|
 pub fn Ipv6Address::to_text(self : Ipv6Address) -> String {
-  let groups : Array[Int] = Array(capacity=8)
+  let groups : Array[Int32] = Array(capacity=8)
   for index in 0..<8 {
     groups.push(self.group(index))
   }

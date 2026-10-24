@@ -2,7 +2,7 @@
 /// Bounded binary reader used by protocol codecs.
 pub struct WireReader {
   input : BytesView
-  mut offset : Int
+  mut offset : Int32
   limits : Limits
 }
 
@@ -18,12 +18,12 @@ pub fn WireReader::new(
 }
 
 ///|
-pub fn WireReader::position(self : WireReader) -> Int {
+pub fn WireReader::position(self : WireReader) -> Int32 {
   self.offset
 }
 
 ///|
-pub fn WireReader::remaining(self : WireReader) -> Int {
+pub fn WireReader::remaining(self : WireReader) -> Int32 {
   self.input.length() - self.offset
 }
 
@@ -41,7 +41,7 @@ pub fn WireReader::remaining_view(self : WireReader) -> BytesView {
 pub fn WireReader::read_fixed(
   self : WireReader,
   context : String,
-  length : Int,
+  length : Int32,
 ) -> Result[BytesView, MoonLoomError] {
   if length < 0 {
     return Err(OffsetOutOfBounds(length))
@@ -95,7 +95,7 @@ pub fn WireReader::read_length_prefixed(
 pub fn WireReader::read_u16_be(
   self : WireReader,
   context : String,
-) -> Result[Int, MoonLoomError] {
+) -> Result[Int32, MoonLoomError] {
   match self.read_fixed(context, 2) {
     Ok(bytes) => Ok((bytes[0].to_int() << 8) | bytes[1].to_int())
     Err(err) => Err(err)
@@ -114,7 +114,7 @@ pub fn WireWriter::new() -> WireWriter {
 }
 
 ///|
-pub fn WireWriter::length(self : WireWriter) -> Int {
+pub fn WireWriter::length(self : WireWriter) -> Int32 {
   self.buffer.length()
 }
 
@@ -136,7 +136,7 @@ pub fn WireWriter::write_varint(self : WireWriter, value : UInt64) -> Unit {
 }
 
 ///|
-pub fn WireWriter::write_u16_be(self : WireWriter, value : Int) -> Unit {
+pub fn WireWriter::write_u16_be(self : WireWriter, value : Int32) -> Unit {
   self.buffer.write_byte((value >> 8).to_byte())
   self.buffer.write_byte((value & 0xFF).to_byte())
 }

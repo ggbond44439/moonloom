@@ -14,6 +14,11 @@ test "multibase known-vector encoding" {
     @moonloom.multibase_encode(@moonloom.Base32Upper, data),
     Ok("BNBSWY3DP"),
   )
+  assert_eq(@moonloom.multibase_encode(@moonloom.Base36, data), Ok("k5pzcszu7"))
+  assert_eq(
+    @moonloom.multibase_encode(@moonloom.Base36Upper, data),
+    Ok("K5PZCSZU7"),
+  )
   assert_eq(
     @moonloom.multibase_encode(@moonloom.Base58Btc, data),
     Ok("zCn8eVZg"),
@@ -38,6 +43,49 @@ test "multibase known-vector decoding" {
     Ok(value) => assert_eq(value.data, b"hello")
     Err(err) => fail(err.to_string())
   }
+  match @moonloom.multibase_decode("k5pzcszu7", @moonloom.Limits::default()) {
+    Ok(value) => {
+      assert_eq(value.base, @moonloom.Base36)
+      assert_eq(value.data, b"hello")
+    }
+    Err(err) => fail(err.to_string())
+  }
+  match @moonloom.multibase_decode("K5PZCSZU7", @moonloom.Limits::default()) {
+    Ok(value) => {
+      assert_eq(value.base, @moonloom.Base36Upper)
+      assert_eq(value.data, b"hello")
+    }
+    Err(err) => fail(err.to_string())
+  }
+}
+
+///|
+test "base36 preserves empty, zero, and leading-zero prefixes" {
+  assert_eq(@moonloom.multibase_encode(@moonloom.Base36, b""), Ok("k"))
+  assert_eq(
+    @moonloom.multibase_encode(@moonloom.Base36, b"\x00\x00\x01"),
+    Ok("k001"),
+  )
+  assert_eq(
+    @moonloom.multibase_decode("k001", @moonloom.Limits::default()),
+    Ok({ base: @moonloom.Base36, data: b"\x00\x00\x01", }),
+  )
+  assert_eq(
+    @moonloom.multibase_decode("K0", @moonloom.Limits::default()),
+    Ok({ base: @moonloom.Base36Upper, data: b"\x00", }),
+  )
+}
+
+///|
+test "base36 rejects the wrong alphabet case" {
+  assert_eq(
+    @moonloom.multibase_decode("kABC", @moonloom.Limits::default()),
+    Err(@moonloom.InvalidBaseCharacter('k', 0)),
+  )
+  assert_eq(
+    @moonloom.multibase_decode("Kabc", @moonloom.Limits::default()),
+    Err(@moonloom.InvalidBaseCharacter('K', 0)),
+  )
 }
 
 ///|
@@ -52,6 +100,8 @@ test "multibase round trips every supported base" {
     @moonloom.Base32Upper,
     @moonloom.Base32Pad,
     @moonloom.Base32PadUpper,
+    @moonloom.Base36,
+    @moonloom.Base36Upper,
     @moonloom.Base58Btc,
     @moonloom.Base64,
     @moonloom.Base64Pad,
@@ -91,6 +141,14 @@ test "multibase rejects unknown and malformed input" {
   )
   assert_eq(
     @moonloom.multibase_decode("mA", @moonloom.Limits::default()),
+    Err(@moonloom.InvalidPadding("base64", 1)),
+  )
+  assert_eq(
+    @moonloom.multibase_decode("bmz", @moonloom.Limits::default()),
+    Err(@moonloom.InvalidPadding("base32", 1)),
+  )
+  assert_eq(
+    @moonloom.multibase_decode("mZh", @moonloom.Limits::default()),
     Err(@moonloom.InvalidPadding("base64", 1)),
   )
 }

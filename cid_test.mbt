@@ -122,3 +122,35 @@ test "CID constructors enforce version-specific rules" {
     Err(@moonloom.UnsupportedHashAlgorithm("CIDv0 requires sha2-256")),
   )
 }
+
+///|
+test "CIDv0 requires the exact sha2-256 multihash shape" {
+  assert_eq(
+    @moonloom.Multihash::decode(b"\x12\x01\x00", @moonloom.Limits::default()),
+    Err(@moonloom.DigestLengthMismatch("sha2-256", 32, 1)),
+  )
+  let oversized = Bytes::make(73 * 1024, b'\x00')
+  assert_eq(
+    @moonloom.Cid::decode_bytes(oversized, @moonloom.Limits::default()),
+    Err(@moonloom.InvalidCid("CIDv0 must be 34 bytes", 73 * 1024)),
+  )
+}
+
+///|
+test "CID creation enforces content limits before hashing" {
+  let limits = @moonloom.Limits::new(max_input_bytes=4)
+  assert_eq(
+    @moonloom.cid_from_content(
+      85UL,
+      @moonloom.Sha2_256,
+      b"12345",
+      @moonloom.sha2_provider(),
+      limits,
+    ),
+    Err(@moonloom.InputTooLong("CID content", 4, 5)),
+  )
+  assert_eq(
+    @moonloom.cid_v0_from_content(b"12345", @moonloom.sha2_provider(), limits),
+    Err(@moonloom.InputTooLong("CID content", 4, 5)),
+  )
+}

@@ -357,6 +357,37 @@ test "Multiaddr binary round trip preserves typed values" {
 }
 
 ///|
+test "Multiaddr accepts CIDv1 PeerID text and preserves canonical bytes" {
+  let limits = @moonloom.Limits::default()
+  let hash = match @moonloom.Multihash::identity(b"peer", limits) {
+    Ok(value) => value
+    Err(err) => fail(err.to_string())
+  }
+  let cid = match @moonloom.Cid::v1(@moonloom.LIBP2P_KEY_CODEC, hash, limits) {
+    Ok(value) => value
+    Err(err) => fail(err.to_string())
+  }
+  let text = match cid.to_text() {
+    Ok(value) => value
+    Err(err) => fail(err.to_string())
+  }
+  let address_text = "/p2p/" + text
+  let address = match @moonloom.Multiaddr::parse(address_text, limits) {
+    Ok(value) => value
+    Err(err) => fail(err.to_string())
+  }
+  let bytes = match address.to_bytes(limits) {
+    Ok(value) => value
+    Err(err) => fail(err.to_string())
+  }
+  let decoded = match @moonloom.Multiaddr::parse_bytes(bytes, limits) {
+    Ok(value) => value
+    Err(err) => fail(err.to_string())
+  }
+  assert_eq(decoded.to_text(), Ok(address_text))
+}
+
+///|
 test "Multiaddr binary parser rejects truncation and unknown codes" {
   let limits = @moonloom.Limits::default()
   assert_eq(

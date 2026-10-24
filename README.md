@@ -16,7 +16,10 @@ input, and preserving interoperability with the Multiformats ecosystem.
 ## Features
 
 - Canonical unsigned varint encoding and strict decoding.
-- Multibase for base16, base32, base58btc, base64, and URL-safe base64.
+- CIDv0 requires the exact 34-byte SHA-256 multihash shape.
+- PeerID text accepts both legacy base58btc multihashes and CIDv1
+  `libp2p-key` values.
+- Multibase for base16, base32, base36, base58btc, base64, and URL-safe base64.
 - One registry for CID, hash, content format, and Multiaddr protocol metadata.
 - Multihash with `identity`, `sha2-256`, `sha2-512`, `sha3-256`, `sha3-512`, and `blake3`.
 - CIDv0 and CIDv1 creation, parsing, canonical text, and verification.
@@ -25,13 +28,15 @@ input, and preserving interoperability with the Multiformats ecosystem.
   WebTransport, and certhash.
 - Reusable bounded `WireReader` and `WireWriter` primitives.
 - Typed errors, byte offsets, and configurable resource limits.
+- Multibase decoders reject non-zero trailing padding bits (`bmz`, `mZh`).
+- CID creation checks content length before invoking a hash provider.
 - Multibase, Multihash, CID, and Multiaddr CLI commands, including strict text, Base64, and Hex content input.
 - wasm, wasm-gc, JS, and Native target checking.
 
 ## Install
 
 ```text
-moon add ggbond44439/moonloom@0.1.6
+moon add ggbond44439/moonloom@0.1.8
 ```
 
 In another MoonBit package:
@@ -143,9 +148,8 @@ moon package --list
 
 ## Status
 
-MoonLoom `0.1.6` is the format-core release for the 2026 September MoonBit
-Hackathon. The library, CLI, examples, interoperability vectors, and CI matrix
-are complete for the scoped formats.
+MoonLoom `0.1.8` adds multibase base36/base36upper interoperability and makes
+CLI failures exit cleanly with their intended status code.
 
 ## License
 

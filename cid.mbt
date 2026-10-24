@@ -8,6 +8,9 @@ pub const CID_VERSION_1 : UInt64 = 1UL
 pub const DAG_PB_CODEC : UInt64 = 112UL
 
 ///|
+pub const LIBP2P_KEY_CODEC : UInt64 = 114UL
+
+///|
 /// CIDv0 or CIDv1 value.
 pub(all) struct Cid {
   version : UInt64
@@ -41,6 +44,11 @@ pub fn Cid::v0(hash : Multihash, limits : Limits) -> Result[Cid, MoonLoomError] 
   match hash.algorithm() {
     Some(Sha2_256) => {
       let bytes = hash.encode()
+      if hash.digest.length() != 32 {
+        return Err(
+          DigestLengthMismatch("CIDv0 sha2-256", 32, hash.digest.length()),
+        )
+      }
       match limits.check_input("CID", bytes.length()) {
         Ok(_) => Ok({ version: CID_VERSION_0, codec: DAG_PB_CODEC, hash, })
         Err(err) => Err(err)
@@ -103,6 +111,33 @@ fn decode_v1(input : BytesView, limits : Limits) -> Result[Cid, MoonLoomError] {
 }
 
 ///|
+fn decode_v0(input : BytesView, limits : Limits) -> Result[Cid, MoonLoomError] {
+  if input.length() != 34 {
+    return Err(InvalidCid("CIDv0 must be 34 bytes", input.length()))
+  }
+  let code = match input.get(0) {
+    Some(value) => value.to_int()
+    None => return Err(Truncated("CIDv0", 0))
+  }
+  let digest_length = match input.get(1) {
+    Some(value) => value.to_int()
+    None => return Err(Truncated("CIDv0", 1))
+  }
+  if code != 0x12 || digest_length != 0x20 {
+    return Err(InvalidCid("CIDv0 must be a sha2-256 multihash", 0))
+  }
+  match Multihash::decode(input, limits) {
+    Ok((hash, consumed)) =>
+      if consumed != input.length() {
+        Err(InvalidCid("trailing bytes", consumed))
+      } else {
+        Cid::v0(hash, limits)
+      }
+    Err(err) => Err(err)
+  }
+}
+
+///|
 pub fn Cid::decode_bytes(
   input : BytesView,
   limits : Limits,
@@ -119,15 +154,7 @@ pub fn Cid::decode_bytes(
       if first == CID_VERSION_1 {
         decode_v1(input[first_length:], limits)
       } else {
-        match Multihash::decode(input, limits) {
-          Ok((hash, consumed)) => {
-            if consumed != input.length() {
-              return Err(InvalidCid("trailing bytes", consumed))
-            }
-            Cid::v0(hash, limits)
-          }
-          Err(err) => Err(err)
-        }
+        decode_v0(input, limits)
       }
     Err(err) => Err(err)
   }
@@ -198,6 +225,10 @@ pub fn cid_from_content(
   provider : HashProvider,
   limits : Limits,
 ) -> Result[Cid, MoonLoomError] {
+  match limits.check_input("CID content", content.length()) {
+    Ok(_) => ()
+    Err(err) => return Err(err)
+  }
   match provider.hash(algorithm, content) {
     Ok(digest) =>
       match Multihash::create(algorithm, digest, limits) {
@@ -214,6 +245,10 @@ pub fn cid_v0_from_content(
   provider : HashProvider,
   limits : Limits,
 ) -> Result[Cid, MoonLoomError] {
+  match limits.check_input("CID content", content.length()) {
+    Ok(_) => ()
+    Err(err) => return Err(err)
+  }
   match provider.hash(Sha2_256, content) {
     Ok(digest) =>
       match Multihash::create(Sha2_256, digest, limits) {

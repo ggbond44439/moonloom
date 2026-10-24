@@ -1,5 +1,5 @@
 ///|
-pub const CLI_VERSION : String = "0.1.6"
+pub const CLI_VERSION : String = "0.1.8"
 
 ///|
 pub(all) enum TopLevelCommand {
@@ -53,7 +53,7 @@ pub impl Show for CliError with fn output(self, logger) {
 
 ///|
 pub(all) struct CliResult {
-  exit_code : Int
+  exit_code : Int32
   stdout : String
   stderr : String
 } derive(Eq, @debug.Debug)
@@ -64,7 +64,7 @@ pub fn CliResult::success(stdout : String) -> CliResult {
 }
 
 ///|
-pub fn CliResult::failure(code : Int, stderr : String) -> CliResult {
+pub fn CliResult::failure(code : Int32, stderr : String) -> CliResult {
   { exit_code: code, stdout: "", stderr, }
 }
 

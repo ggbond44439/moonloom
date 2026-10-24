@@ -4,6 +4,7 @@ import {
   "moonbitlang/core/encoding/utf8",
   "moonbitstack/moonbase/base16",
   "moonbitstack/moonbase/base32",
+  "moonbitstack/moonbase/base36",
   "moonbitstack/moonbase/base58",
   "moonbitstack/moonbase/base64",
   "moonbitstack/mooncrypt/hash/sha2",

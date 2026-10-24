@@ -1,10 +1,10 @@
 ///|
 /// Resource limits shared by all formats.
 pub struct Limits {
-  max_input_bytes : Int
-  max_varint_bytes : Int
-  max_digest_bytes : Int
-  max_multiaddr_bytes : Int
+  max_input_bytes : Int32
+  max_varint_bytes : Int32
+  max_digest_bytes : Int32
+  max_multiaddr_bytes : Int32
 }
 
 ///|
@@ -19,31 +19,31 @@ pub fn Limits::default() -> Limits {
 
 ///|
 pub fn Limits::new(
-  max_input_bytes? : Int = 16 * 1024 * 1024,
-  max_varint_bytes? : Int = 10,
-  max_digest_bytes? : Int = 64,
-  max_multiaddr_bytes? : Int = 4 * 1024,
+  max_input_bytes~ : Int32 = 16 * 1024 * 1024,
+  max_varint_bytes~ : Int32 = 10,
+  max_digest_bytes~ : Int32 = 64,
+  max_multiaddr_bytes~ : Int32 = 4 * 1024,
 ) -> Limits {
   { max_input_bytes, max_varint_bytes, max_digest_bytes, max_multiaddr_bytes, }
 }
 
 ///|
-pub fn Limits::max_input_bytes(self : Limits) -> Int {
+pub fn Limits::max_input_bytes(self : Limits) -> Int32 {
   self.max_input_bytes
 }
 
 ///|
-pub fn Limits::max_varint_bytes(self : Limits) -> Int {
+pub fn Limits::max_varint_bytes(self : Limits) -> Int32 {
   self.max_varint_bytes
 }
 
 ///|
-pub fn Limits::max_digest_bytes(self : Limits) -> Int {
+pub fn Limits::max_digest_bytes(self : Limits) -> Int32 {
   self.max_digest_bytes
 }
 
 ///|
-pub fn Limits::max_multiaddr_bytes(self : Limits) -> Int {
+pub fn Limits::max_multiaddr_bytes(self : Limits) -> Int32 {
   self.max_multiaddr_bytes
 }
 
@@ -51,7 +51,7 @@ pub fn Limits::max_multiaddr_bytes(self : Limits) -> Int {
 pub fn Limits::check_input(
   self : Limits,
   context : String,
-  length : Int,
+  length : Int32,
 ) -> Result[Unit, MoonLoomError] {
   if length < 0 {
     Err(OffsetOutOfBounds(length))
@@ -67,7 +67,7 @@ pub fn Limits::check_input(
 pub fn Limits::check_digest(
   self : Limits,
   context : String,
-  length : Int,
+  length : Int32,
 ) -> Result[Unit, MoonLoomError] {
   if length < 0 {
     Err(OffsetOutOfBounds(length))
@@ -82,7 +82,7 @@ pub fn Limits::check_digest(
 /// Validate a Multiaddr byte length before allocation or decoding.
 pub fn Limits::check_multiaddr(
   self : Limits,
-  length : Int,
+  length : Int32,
 ) -> Result[Unit, MoonLoomError] {
   if length < 0 {
     Err(OffsetOutOfBounds(length))

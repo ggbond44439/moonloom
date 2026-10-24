@@ -7,7 +7,8 @@ fn multibase_help() -> String {
     $|
     $|Supported bases:
     $|  base16, base16upper, base32, base32upper, base32pad,
-    $|  base32padupper, base58btc, base64, base64pad, base64url, base64urlpad
+    $|  base32padupper, base36, base36upper, base58btc, base64,
+    $|  base64pad, base64url, base64urlpad
   )
 }
 
@@ -46,7 +47,7 @@ fn run_multibase_encode(args : ArrayView[String], json : Bool) -> CliResult {
       } else {
         CliResult::success(value)
       }
-    Err(err) => CliResult::failure(1, "moonloom: \{err.to_string()}")
+    Err(err) => CliResult::failure(1, err.to_string())
   }
 }
 
@@ -64,7 +65,7 @@ fn run_multibase_decode(args : ArrayView[String], json : Bool) -> CliResult {
   let decoded = match
     @moonloom.multibase_decode(positional[0], @moonloom.Limits::default()) {
     Ok(value) => value
-    Err(err) => return CliResult::failure(1, "moonloom: \{err.to_string()}")
+    Err(err) => return CliResult::failure(1, err.to_string())
   }
   if json {
     CliResult::success(

@@ -65,7 +65,7 @@ pub fn supported_hash_algorithms() -> Array[HashAlgorithm] {
 }
 
 ///|
-pub fn HashAlgorithm::expected_digest_size(self : HashAlgorithm) -> Int? {
+pub fn HashAlgorithm::expected_digest_size(self : HashAlgorithm) -> Int32? {
   match self {
     Identity => None
     Sha2_256 => Some(32)
@@ -211,7 +211,7 @@ pub fn Multihash::encode(self : Multihash) -> Bytes {
 pub fn Multihash::decode(
   input : BytesView,
   limits : Limits,
-) -> Result[(Multihash, Int), MoonLoomError] {
+) -> Result[(Multihash, Int32), MoonLoomError] {
   let reader = match WireReader::new(input, limits) {
     Ok(value) => value
     Err(err) => return Err(err)
@@ -219,6 +219,10 @@ pub fn Multihash::decode(
   let code = match reader.read_varint("multihash code") {
     Ok(value) => value
     Err(err) => return Err(err)
+  }
+  let algorithm = match HashAlgorithm::from_code(code) {
+    Some(value) => value
+    None => return Err(UnknownCodec(code))
   }
   let digest_length = match reader.read_varint("multihash digest length") {
     Ok(value) => value
@@ -234,6 +238,15 @@ pub fn Multihash::decode(
     )
   }
   let digest_size = digest_length.to_int()
+  match algorithm.expected_digest_size() {
+    Some(expected) =>
+      if digest_size != expected {
+        return Err(
+          DigestLengthMismatch(algorithm.name(), expected, digest_size),
+        )
+      }
+    None => ()
+  }
   let digest = match reader.read_fixed("multihash digest", digest_size) {
     Ok(value) => value
     Err(err) => return Err(err)

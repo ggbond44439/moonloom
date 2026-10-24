@@ -1,5 +1,5 @@
 ///|
-fn deterministic_bytes(seed : UInt64, length : Int) -> Bytes {
+fn deterministic_bytes(seed : UInt64, length : Int32) -> Bytes {
   let out = FixedArray::make(length, b'\x00')
   let mut state = seed
   for index in 0..<length {

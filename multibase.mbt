@@ -7,6 +7,8 @@ pub(all) enum Base {
   Base32Upper
   Base32Pad
   Base32PadUpper
+  Base36
+  Base36Upper
   Base58Btc
   Base64
   Base64Pad
@@ -29,6 +31,8 @@ pub fn Base::prefix(self : Base) -> Char {
     Base32Upper => 'B'
     Base32Pad => 'c'
     Base32PadUpper => 'C'
+    Base36 => 'k'
+    Base36Upper => 'K'
     Base58Btc => 'z'
     Base64 => 'm'
     Base64Pad => 'M'
@@ -46,6 +50,8 @@ pub fn Base::from_prefix(prefix : Char) -> Base? {
     'B' => Some(Base32Upper)
     'c' => Some(Base32Pad)
     'C' => Some(Base32PadUpper)
+    'k' => Some(Base36)
+    'K' => Some(Base36Upper)
     'z' => Some(Base58Btc)
     'm' => Some(Base64)
     'M' => Some(Base64Pad)
@@ -64,6 +70,8 @@ pub fn Base::name(self : Base) -> String {
     Base32Upper => "base32upper"
     Base32Pad => "base32pad"
     Base32PadUpper => "base32padupper"
+    Base36 => "base36"
+    Base36Upper => "base36upper"
     Base58Btc => "base58btc"
     Base64 => "base64"
     Base64Pad => "base64pad"
@@ -81,6 +89,8 @@ pub fn Base::from_name(name : StringView) -> Base? {
     "base32upper" => Some(Base32Upper)
     "base32pad" => Some(Base32Pad)
     "base32padupper" => Some(Base32PadUpper)
+    "base36" => Some(Base36)
+    "base36upper" => Some(Base36Upper)
     "base58btc" => Some(Base58Btc)
     "base64" => Some(Base64)
     "base64pad" => Some(Base64Pad)
@@ -99,6 +109,8 @@ pub fn supported_bases() -> Array[Base] {
     Base32Upper,
     Base32Pad,
     Base32PadUpper,
+    Base36,
+    Base36Upper,
     Base58Btc,
     Base64,
     Base64Pad,
@@ -122,7 +134,7 @@ fn case_is_canonical(text : StringView, upper_required : Bool) -> Bool {
 }
 
 ///|
-fn invalid_base32_offset(text : StringView, upper : Bool) -> Int? {
+fn invalid_base32_offset(text : StringView, upper : Bool) -> Int32? {
   for index, code_unit in text.code_units() {
     let code = code_unit.to_int()
     let letter = if upper {
@@ -139,7 +151,7 @@ fn invalid_base32_offset(text : StringView, upper : Bool) -> Int? {
 }
 
 ///|
-fn has_ascii(text : StringView, expected : Int) -> Bool {
+fn has_ascii(text : StringView, expected : Int32) -> Bool {
   for code_unit in text.code_units() {
     if code_unit.to_int() == expected {
       return true
@@ -149,7 +161,109 @@ fn has_ascii(text : StringView, expected : Int) -> Bool {
 }
 
 ///|
-fn trailing_padding(text : StringView) -> Int {
+fn base32_value(code : Int32, upper : Bool) -> Int32? {
+  if upper {
+    if code >= 65 && code <= 90 {
+      Some(code - 65)
+    } else if code >= 50 && code <= 55 {
+      Some(code - 50 + 26)
+    } else {
+      None
+    }
+  } else if code >= 97 && code <= 122 {
+    Some(code - 97)
+  } else if code >= 50 && code <= 55 {
+    Some(code - 50 + 26)
+  } else {
+    None
+  }
+}
+
+///|
+fn validate_base32_tail(
+  text : StringView,
+  data_length : Int32,
+  upper : Bool,
+) -> Result[Unit, MoonLoomError] {
+  let remainder = data_length % 8
+  let allowed = remainder == 0 ||
+    remainder == 2 ||
+    remainder == 4 ||
+    remainder == 5 ||
+    remainder == 7
+  if !allowed {
+    return Err(InvalidPadding("base32", data_length))
+  }
+  if remainder == 0 {
+    return Ok(())
+  }
+  let value = match
+    base32_value(text.unsafe_get(data_length - 1).to_int(), upper) {
+    Some(value) => value
+    None => return Err(InvalidBaseCharacter('b', data_length - 1))
+  }
+  let mask = match remainder {
+    2 => 3
+    4 => 15
+    5 => 1
+    _ => 7
+  }
+  if value % (mask + 1) != 0 {
+    Err(InvalidPadding("base32", data_length - 1))
+  } else {
+    Ok(())
+  }
+}
+
+///|
+fn base64_value(code : Int32, url : Bool) -> Int32? {
+  if code >= 65 && code <= 90 {
+    Some(code - 65)
+  } else if code >= 97 && code <= 122 {
+    Some(code - 97 + 26)
+  } else if code >= 48 && code <= 57 {
+    Some(code - 48 + 52)
+  } else if url && code == 45 {
+    Some(62)
+  } else if url && code == 95 {
+    Some(63)
+  } else if !url && code == 43 {
+    Some(62)
+  } else if !url && code == 47 {
+    Some(63)
+  } else {
+    None
+  }
+}
+
+///|
+fn validate_base64_tail(
+  text : StringView,
+  data_length : Int32,
+  url : Bool,
+) -> Result[Unit, MoonLoomError] {
+  let remainder = data_length % 4
+  if remainder == 0 {
+    return Ok(())
+  }
+  if remainder == 1 {
+    return Err(InvalidPadding("base64", data_length))
+  }
+  let value = match
+    base64_value(text.unsafe_get(data_length - 1).to_int(), url) {
+    Some(value) => value
+    None => return Err(InvalidBaseCharacter('m', data_length - 1))
+  }
+  let mask = if remainder == 2 { 15 } else { 3 }
+  if value % (mask + 1) != 0 {
+    Err(InvalidPadding("base64", data_length - 1))
+  } else {
+    Ok(())
+  }
+}
+
+///|
+fn trailing_padding(text : StringView) -> Int32 {
   let mut count = 0
   for index in text.length()>..0 {
     if text.unsafe_get(index).to_int() == 61 {
@@ -241,6 +355,10 @@ fn decode_base32(
   } else if has_ascii(text, 61) {
     return Err(InvalidPadding("base32", 0))
   }
+  match validate_base32_tail(text, data_length, upper) {
+    Ok(_) => ()
+    Err(err) => return Err(err)
+  }
   let bytes = @base32.decode(text, kind=@base32.Kind::Std) catch {
     _ => return Err(InvalidBaseCharacter(prefix, 0))
   }
@@ -250,6 +368,29 @@ fn decode_base32(
 ///|
 fn encode_base58(data : BytesView) -> String {
   @base58.encode(data)
+}
+
+///|
+fn encode_base36(data : BytesView, upper : Bool) -> String {
+  @base36.encode(
+    data,
+    kind=if upper { @base36.Kind::Upper } else { @base36.Kind::Lower },
+  )
+}
+
+///|
+fn decode_base36(
+  text : StringView,
+  prefix : Char,
+  upper : Bool,
+) -> Result[Bytes, MoonLoomError] {
+  let bytes = @base36.decode(
+    text,
+    kind=if upper { @base36.Kind::Upper } else { @base36.Kind::Lower },
+  ) catch {
+    _ => return Err(InvalidBaseCharacter(prefix, 0))
+  }
+  Ok(bytes)
 }
 
 ///|
@@ -276,11 +417,12 @@ fn decode_base64(
   url : Bool,
   padding : Bool,
 ) -> Result[Bytes, MoonLoomError] {
+  let mut data_length = text.length()
   if padding {
     if text.length() % 4 != 0 {
       return Err(InvalidPadding("base64", text.length()))
     }
-    let data_length = text.length() - trailing_padding(text)
+    data_length = text.length() - trailing_padding(text)
     let expected = match data_length % 4 {
       0 => 0
       2 => 2
@@ -294,6 +436,10 @@ fn decode_base64(
     return Err(InvalidPadding("base64", 0))
   } else if text.length() % 4 == 1 {
     return Err(InvalidPadding("base64", text.length()))
+  }
+  match validate_base64_tail(text, data_length, url) {
+    Ok(_) => ()
+    Err(err) => return Err(err)
   }
   let bytes = @base64.decode(
     text,
@@ -316,6 +462,8 @@ pub fn multibase_encode(
     Base32Upper => encode_base32(data, true, false)
     Base32Pad => encode_base32(data, false, true)
     Base32PadUpper => encode_base32(data, true, true)
+    Base36 => encode_base36(data, false)
+    Base36Upper => encode_base36(data, true)
     Base58Btc => encode_base58(data)
     Base64 => encode_base64(data, false, false)
     Base64Pad => encode_base64(data, false, true)
@@ -353,6 +501,8 @@ pub fn multibase_decode(
     Base32Upper => decode_base32(payload, 'B', true, false)
     Base32Pad => decode_base32(payload, 'c', false, true)
     Base32PadUpper => decode_base32(payload, 'C', true, true)
+    Base36 => decode_base36(payload, 'k', false)
+    Base36Upper => decode_base36(payload, 'K', true)
     Base58Btc => decode_base58(payload)
     Base64 => decode_base64(payload, 'm', false, false)
     Base64Pad => decode_base64(payload, 'M', false, true)

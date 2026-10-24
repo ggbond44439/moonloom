@@ -14,7 +14,7 @@ pub fn encode_u64(value : UInt64) -> Bytes {
 
 ///|
 /// Decode an unsigned varint with the default resource limits.
-pub fn decode_u64(input : BytesView) -> Result[(UInt64, Int), MoonLoomError] {
+pub fn decode_u64(input : BytesView) -> Result[(UInt64, Int32), MoonLoomError] {
   decode_u64_with_limits(input, Limits::default())
 }
 
@@ -24,7 +24,7 @@ pub fn decode_u64(input : BytesView) -> Result[(UInt64, Int), MoonLoomError] {
 pub fn decode_u64_with_limits(
   input : BytesView,
   limits : Limits,
-) -> Result[(UInt64, Int), MoonLoomError] {
+) -> Result[(UInt64, Int32), MoonLoomError] {
   match limits.check_input("varint", input.length()) {
     Ok(_) => ()
     Err(err) => return Err(err)

@@ -14,7 +14,7 @@ test "CLI parses global options and known commands" {
 test "CLI defaults to help and supports explicit version" {
   assert_eq(@cli.run([]).exit_code, 0)
   assert_true(@cli.run([]).stdout.has_prefix("MoonLoom"))
-  assert_eq(@cli.run(["version"]).stdout, "moonloom 0.1.8")
+  assert_eq(@cli.run(["version"]).stdout, "moonloom 0.1.9")
 }
 
 ///|
@@ -141,6 +141,23 @@ test "CID CLI emits structured results and verifies content" {
   assert_eq(
     @cli.run(["cid", "verify", "--json", cid, "world"]).stdout,
     "{\"match\":false}",
+  )
+}
+
+///|
+test "CID CLI converts versions and chooses a text base" {
+  let v0 = "QmRN6wdp1S2A5EtjW9A3M1vKSBuQQGcgvuhoMUoEz4iiT5"
+  let v1 = "bafybeibm6jg3ux5qumhcn2b3flc3tyu6dmlb4xa7u5bf44yegnrjhc4yeq"
+  assert_eq(@cli.run(["cid", "convert", "--version", "1", v0]).stdout, v1)
+  assert_eq(@cli.run(["cid", "convert", "--version", "0", v1]).stdout, v0)
+  assert_eq(
+    @cli.run(["cid", "convert", "--version", "1", "--base", "base36", v0]).stdout,
+    "k2jmtxshftbvrdof1z3qg5p2h3ikoogqns7mwkrp24dbii8uaksgjg2s",
+  )
+  assert_eq(@cli.run(["cid", "convert", "--version", "0", v0]).stdout, v0)
+  assert_eq(
+    @cli.run(["cid", "convert", "--version", "0", "--base", "base36", v0]).exit_code,
+    1,
   )
 }
 

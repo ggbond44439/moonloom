@@ -86,6 +86,98 @@ test "CID text and binary round trip" {
 }
 
 ///|
+test "CID versions convert without changing identity" {
+  let limits = @moonloom.Limits::default()
+  let v0 = match
+    @moonloom.cid_v0_from_content(b"hello", @moonloom.sha2_provider(), limits) {
+    Ok(value) => value
+    Err(err) => fail(err.to_string())
+  }
+  let v1 = match v0.to_v1(limits) {
+    Ok(value) => value
+    Err(err) => fail(err.to_string())
+  }
+  assert_eq(v1.version, 1UL)
+  assert_eq(v1.codec, @moonloom.DAG_PB_CODEC)
+  assert_eq(v1.hash, v0.hash)
+  assert_eq(
+    v1.to_text(),
+    Ok("bafybeibm6jg3ux5qumhcn2b3flc3tyu6dmlb4xa7u5bf44yegnrjhc4yeq"),
+  )
+  let downgraded = match v1.to_v0(limits) {
+    Ok(value) => value
+    Err(err) => fail(err.to_string())
+  }
+  assert_eq(downgraded, v0)
+  assert_eq(v0.to_v1(limits), Ok(v1))
+  assert_eq(v1.to_v0(limits), Ok(v0))
+}
+
+///|
+test "CIDv1 text supports every multibase spelling" {
+  let limits = @moonloom.Limits::default()
+  let v0 = match
+    @moonloom.cid_v0_from_content(b"hello", @moonloom.sha2_provider(), limits) {
+    Ok(value) => value
+    Err(err) => fail(err.to_string())
+  }
+  let v1 = match v0.to_v1(limits) {
+    Ok(value) => value
+    Err(err) => fail(err.to_string())
+  }
+  assert_eq(
+    v1.to_text_with_base(@moonloom.Base36),
+    Ok("k2jmtxshftbvrdof1z3qg5p2h3ikoogqns7mwkrp24dbii8uaksgjg2s"),
+  )
+  let base58 = match v1.to_text_with_base(@moonloom.Base58Btc) {
+    Ok(value) => value
+    Err(err) => fail(err.to_string())
+  }
+  assert_true(base58.has_prefix("z"))
+  match @moonloom.Cid::parse(base58, limits) {
+    Ok(decoded) => assert_eq(decoded, v1)
+    Err(err) => fail(err.to_string())
+  }
+  assert_eq(
+    v0.to_text_with_base(@moonloom.Base32),
+    Err(@moonloom.InvalidCid("CIDv0 text must use base58btc", 0)),
+  )
+}
+
+///|
+test "CIDv0 downgrade rejects incompatible codecs and hashes" {
+  let limits = @moonloom.Limits::default()
+  let raw = match
+    @moonloom.cid_from_content(
+      @moonloom.RAW_CODEC,
+      @moonloom.Sha2_256,
+      b"hello",
+      @moonloom.sha2_provider(),
+      limits,
+    ) {
+    Ok(value) => value
+    Err(err) => fail(err.to_string())
+  }
+  assert_eq(raw.to_v0(limits), Err(@moonloom.CidCodecMismatch(85UL)))
+
+  let sha512 = match
+    @moonloom.cid_from_content(
+      @moonloom.DAG_PB_CODEC,
+      @moonloom.Sha2_512,
+      b"hello",
+      @moonloom.sha2_provider(),
+      limits,
+    ) {
+    Ok(value) => value
+    Err(err) => fail(err.to_string())
+  }
+  assert_eq(
+    sha512.to_v0(limits),
+    Err(@moonloom.UnsupportedHashAlgorithm("CIDv0 requires sha2-256")),
+  )
+}
+
+///|
 test "CID verifies content and rejects a mismatch" {
   let cid = match
     @moonloom.cid_from_content(

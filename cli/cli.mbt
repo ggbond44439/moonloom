@@ -1,5 +1,5 @@
 ///|
-pub const CLI_VERSION : String = "0.1.8"
+pub const CLI_VERSION : String = "0.1.9"
 
 ///|
 pub(all) enum TopLevelCommand {

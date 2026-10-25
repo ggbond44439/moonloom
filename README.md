@@ -23,6 +23,7 @@ input, and preserving interoperability with the Multiformats ecosystem.
 - One registry for CID, hash, content format, and Multiaddr protocol metadata.
 - Multihash with `identity`, `sha2-256`, `sha2-512`, `sha3-256`, `sha3-512`, and `blake3`.
 - CIDv0 and CIDv1 creation, parsing, canonical text, and verification.
+- CIDv0/CIDv1 conversion with safe downgrade rules and configurable CIDv1 text bases.
 - Typed Multiaddr model, strict text parser, binary codec, and RFC 5952 IPv6
   canonical text, including WebRTC, p2p-circuit, unix, TLS/SNI/noise, QUIC,
   WebTransport, and certhash.
@@ -36,7 +37,7 @@ input, and preserving interoperability with the Multiformats ecosystem.
 ## Install
 
 ```text
-moon add ggbond44439/moonloom@0.1.8
+moon add ggbond44439/moonloom@0.1.9
 ```
 
 In another MoonBit package:
@@ -75,6 +76,30 @@ assert_eq(
 )
 ```
 
+### CID versions
+
+```moonbit
+let v0 = match
+  @moonloom.Cid::parse(
+    "QmRN6wdp1S2A5EtjW9A3M1vKSBuQQGcgvuhoMUoEz4iiT5",
+    @moonloom.Limits::default(),
+  ) {
+  Ok(value) => value
+  Err(err) => fail(err.to_string())
+}
+
+let v1 = match v0.to_v1(@moonloom.Limits::default()) {
+  Ok(value) => value
+  Err(err) => fail(err.to_string())
+}
+
+assert_eq(
+  v1.to_text_with_base(@moonloom.Base36),
+  Ok("k2jmtxshftbvrdof1z3qg5p2h3ikoogqns7mwkrp24dbii8uaksgjg2s"),
+)
+assert_eq(v1.to_v0(@moonloom.Limits::default()), Ok(v0))
+```
+
 ## CLI
 
 ```text
@@ -90,6 +115,7 @@ moonloom multihash verify [--data-format text|base64|hex] <multibase-multihash> 
 
 moonloom cid encode [--version 0|1] [--codec <name>] [--algorithm <name>] [--data-format text|base64|hex] <data>
 moonloom cid decode <cid>
+moonloom cid convert [--version 0|1] [--base <name>] <cid>
 moonloom cid verify [--data-format text|base64|hex] <cid> <data>
 
 moonloom multiaddr parse <text>
@@ -115,8 +141,8 @@ moon run examples/cross_language_fixture
 ## Relationship with Moonbase
 
 MoonLoom directly depends on `moonbitstack/moonbase@0.4.0`. Moonbase owns
-the byte encoder and decoder implementations for base16, base32, base58, and
-base64. MoonLoom delegates those codecs to Moonbase and contributes the layers
+the byte encoder and decoder implementations for base16, base32, base36,
+base58, and base64. MoonLoom delegates those codecs to Moonbase and contributes the layers
 above them:
 
 - Multibase prefix lookup and canonical text validation;
@@ -148,8 +174,8 @@ moon package --list
 
 ## Status
 
-MoonLoom `0.1.8` adds multibase base36/base36upper interoperability and makes
-CLI failures exit cleanly with their intended status code.
+MoonLoom `0.1.9` adds safe CID version conversion, configurable CIDv1 text
+bases, and a `cid convert` CLI command.
 
 ## License
 

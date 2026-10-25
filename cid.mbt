@@ -77,6 +77,30 @@ pub fn Cid::is_v0(self : Cid) -> Bool {
 }
 
 ///|
+pub fn Cid::to_v1(self : Cid, limits : Limits) -> Result[Cid, MoonLoomError] {
+  if self.version == CID_VERSION_1 {
+    Ok(self)
+  } else if self.version == CID_VERSION_0 {
+    Cid::v1(self.codec, self.hash, limits)
+  } else {
+    Err(InvalidCid("unsupported CID version", 0))
+  }
+}
+
+///|
+pub fn Cid::to_v0(self : Cid, limits : Limits) -> Result[Cid, MoonLoomError] {
+  if self.version == CID_VERSION_0 {
+    Ok(self)
+  } else if self.version != CID_VERSION_1 {
+    Err(InvalidCid("unsupported CID version", 0))
+  } else if self.codec != DAG_PB_CODEC {
+    Err(CidCodecMismatch(self.codec))
+  } else {
+    Cid::v0(self.hash, limits)
+  }
+}
+
+///|
 pub fn Cid::codec_name(self : Cid) -> String? {
   multicodec_name(self.codec)
 }
@@ -162,10 +186,21 @@ pub fn Cid::decode_bytes(
 
 ///|
 pub fn Cid::to_text(self : Cid) -> Result[String, MoonLoomError] {
+  self.to_text_with_base(if self.is_v0() { Base58Btc } else { Base32 })
+}
+
+///|
+pub fn Cid::to_text_with_base(
+  self : Cid,
+  base : Base,
+) -> Result[String, MoonLoomError] {
   if self.version == 0UL {
+    if base != Base58Btc {
+      return Err(InvalidCid("CIDv0 text must use base58btc", 0))
+    }
     Ok(encode_base58(self.to_bytes()))
   } else {
-    multibase_encode(Base32, self.to_bytes())
+    multibase_encode(base, self.to_bytes())
   }
 }
 

@@ -4,6 +4,7 @@ fn cid_help() -> String {
     $|Usage:
     $|  moonloom cid encode [--version 0|1] [--codec <name>] [--algorithm <name>] [--data-format text|base64|hex] <data>
     $|  moonloom cid decode <cid>
+    $|  moonloom cid convert [--version 0|1] [--base <name>] <cid>
     $|  moonloom cid verify [--data-format text|base64|hex] <cid> <data>
     $|
     $|Defaults:
@@ -125,6 +126,77 @@ fn run_cid_encode(args : ArrayView[String], json : Bool) -> CliResult {
 }
 
 ///|
+fn run_cid_convert(args : ArrayView[String], json : Bool) -> CliResult {
+  let parsed = match parse_options(args, ["version", "base"]) {
+    Ok(value) => value
+    Err(err) => return CliResult::failure(2, "moonloom: \{err.to_string()}")
+  }
+  let options = parsed.0
+  let positional = parsed.1
+  match require_positional_count(positional, 1, "CID text") {
+    Ok(_) => ()
+    Err(err) => return CliResult::failure(2, "moonloom: \{err.to_string()}")
+  }
+  let original = match
+    @moonloom.Cid::parse(positional[0], @moonloom.Limits::default()) {
+    Ok(value) => value
+    Err(err) => return cid_failure(err)
+  }
+  let target_version = option_or(
+    options,
+    "version",
+    original.version.to_string(),
+  )
+  let converted = match target_version {
+    "0" =>
+      match original.to_v0(@moonloom.Limits::default()) {
+        Ok(value) => value
+        Err(err) => return cid_failure(err)
+      }
+    "1" =>
+      match original.to_v1(@moonloom.Limits::default()) {
+        Ok(value) => value
+        Err(err) => return cid_failure(err)
+      }
+    _ =>
+      return CliResult::failure(
+        2,
+        "moonloom: \{InvalidValue("--version", target_version).to_string()}",
+      )
+  }
+  let text = match options.get("base") {
+    Some(base_name) => {
+      let base = match @moonloom.Base::from_name(base_name) {
+        Some(value) => value
+        None =>
+          return CliResult::failure(
+            2,
+            "moonloom: \{InvalidValue("--base", base_name).to_string()}",
+          )
+      }
+      match converted.to_text_with_base(base) {
+        Ok(value) => value
+        Err(err) => return cid_failure(err)
+      }
+    }
+    None =>
+      match converted.to_text() {
+        Ok(value) => value
+        Err(err) => return cid_failure(err)
+      }
+  }
+  let algorithm_name = match converted.hash_algorithm() {
+    Some(algorithm) => algorithm.name()
+    None => "unknown"
+  }
+  if json {
+    CliResult::success(cid_json(converted, text, algorithm_name))
+  } else {
+    CliResult::success(text)
+  }
+}
+
+///|
 fn run_cid_decode(args : ArrayView[String], json : Bool) -> CliResult {
   let parsed = match parse_options(args, []) {
     Ok(value) => value
@@ -220,6 +292,7 @@ pub fn run_cid(invocation : CliInvocation) -> CliResult {
   match action {
     "encode" => run_cid_encode(rest, invocation.json)
     "decode" => run_cid_decode(rest, invocation.json)
+    "convert" => run_cid_convert(rest, invocation.json)
     "verify" => run_cid_verify(rest, invocation.json)
     _ => CliResult::failure(2, "moonloom: unknown cid action '\{action}'")
   }
